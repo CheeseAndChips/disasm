@@ -5,21 +5,21 @@
 section .data
     registers:
         _AL: db "AL"
-        db "CL"
-        db "DL"
-        db "BL"
+        _CL: db "CL"
+        _DL: db "DL"
+        _BL: db "BL"
         _AH: db "AH"
-        db "CH"
-        db "DH"
-        db "BH"
+        _CH: db "CH"
+        _DH: db "DH"
+        _BH: db "BH"
         _AX: db "AX"
-        db "CX"
-        db "DX"
-        db "BX"
-        db "SP"
-        db "BP"
-        db "SI"
-        db "DI"
+        _CX: db "CX"
+        _DX: db "DX"
+        _BX: db "BX"
+        _SP: db "SP"
+        _BP: db "BP"
+        _SI: db "SI"
+        _DI: db "DI"
 
 
 section .text
@@ -28,11 +28,12 @@ section .text
         jz .handle_imm
         
         macWriteStr "Failed decoding move", crlf
-        macExitProgram
+        call exitProgram
 
         .handle_imm:
-            macWriteStrAddr word [bx+2]
-            macWriteStr " "
+            macFWriteStrAddr word [bx+2]
+            ;macWriteStrAddr word [bx+2] ; write instruction
+            ;macWriteStr " "
 
             push ax
             and ax, 0x0f
@@ -63,14 +64,13 @@ section .text
         jz .handle_imm_acc
 
         macWriteStr "Failed decoding add", crlf
-        macExitProgram
+        call exitProgram
 
         .handle_reg_mem:
 
         .handle_imm_reg_mem:
 
         .handle_imm_acc:
-            macWriteStr "Decoding imm acc", crlf
             test al, 1
             jz .handle_al
             macWriteStrAddrSize _AX, 2

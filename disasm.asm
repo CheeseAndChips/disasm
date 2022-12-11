@@ -1,67 +1,29 @@
+%include 'mac.inc'
+
 org 100h
-
-%define crlf 0x0d, 0x0a
-
-%macro macWriteStr 1+
-section .data
-	%%str: db %1, '$'
-section .text
-	macWriteStrAddr %%str
-%endmacro
-
-%macro macWriteStrAddrSize 2
-	push ax
-	push bx
-	push cx
-	push dx
-
-	mov cx, %2
-	mov bx, %1
-	mov ah, 0x02
-	%%loop:
-		mov dl, byte [bx]
-		int 0x21
-		inc bx
-	loop %%loop
-
-	pop dx
-	pop cx
-	pop bx
-	pop ax
-
-%endmacro
-
-%macro macWriteStrAddr 1
-	push ax
-	push dx
-	mov ah, 0x09
-	mov dx, %1
-	int 0x21
-	pop dx
-	pop ax
-%endmacro
-
-%macro macExitProgram 0
-	mov ax, 0x4c00
-	int 0x21
-%endmacro
-
-%macro macReserveVar 2 
-	%assign %{1}__OFFSET__ BP_OFFSET
-	%define %1 bp + %{1}__OFFSET__
-	%assign BP_OFFSET BP_OFFSET+%2
-%endmacro
 
 section .data
 	show_help_arg: db "/?", 0x0d
 	infd: dw 0
 	outfd: dw 0
+	outbuffaddr: dw 0
+	outbuffused: dw 0
+	currentbyte: dw 0
+	readcnt: db 0
+	readnow: times 16 db 0
+
+	crlf_: db crlf, 0
+
+%define BUFFER_SIZE 255
 
 section .text
-	; %assign BP_OFFSET 0
-	; macReserveVar INBUFFER, 256 + 2
-	; sub sp, BP_OFFSET
-	; mov bp, sp
+	%assign BP_OFFSET 0
+	macReserveVar OUTBUFFER, BUFFER_SIZE
+	sub sp, BP_OFFSET
+	mov bp, sp
+
+	lea ax, [OUTBUFFER]
+	mov word [outbuffaddr], ax
 
 	; check if arguments are /?
 	mov cx, 3
@@ -108,7 +70,8 @@ section .text
 	; lea ax, [INBUFFER]
 	; mov [inbufferaddr], ax
 
-	mov cx, 4
+	mov word [currentbyte], 0x100
+
 	.decode_loop:
 		call readByte
 		push ax
@@ -117,22 +80,33 @@ section .text
 		add bx, ax
 		pop ax
 
-		int 0x03
 		push dx
 		mov dx, word [bx]
 		test dx, dx
 		jz .write_failure		
 		pop dx
+
+		mov ax, [currentbyte]
+		call writeW
 		call [bx]
 
-		macWriteStr crlf, 0
+		xor ax, ax
+		; mov al, byte [readcnt]
+		; mov byte [readcnt], 0
+		; add word [currentbyte], ax
+
+		call writeParsedBytes
+		macFWriteStrAddr crlf_
 		loop .decode_loop
 
-	macExitProgram
+	call exitProgram
 	.write_failure:
 	macWriteStr "Failed decoding byte", crlf
-	macExitProgram
+	call exitProgram
 
+exitProgram:
+	call flushBuffer
+	macExitProgram
 
 showHelp:
 	macWriteStr "Joris Pevcevicius", crlf, "1 kursas 3 grupe", crlf, ".com programu disassembleris", crlf, "Naudojimas: disasm.com <programa.com> <rezultatas.asm>", crlf
@@ -172,7 +146,13 @@ readByte:
 	.bytes_left:
 	xor ax, ax
 	mov al, byte [buff]
-	
+
+	xor bx, bx
+	int 0x03
+	mov bl, byte [readcnt]
+	mov [bx+readnow], al
+	inc byte [readcnt]
+
 	.skip_write:
 	pop dx
 	pop cx
@@ -181,6 +161,81 @@ readByte:
 
 fillBuffer:
 
+writeParsedBytes:
+	int 0x03
+	push cx
+	push di
+	xor cx, cx
+	mov cl, byte [readcnt]
+	mov di, readnow
+	.loop:
+		mov al, byte [di]
+		call writeB
+		inc di
+	loop .loop
+	pop di
+	pop cx
+	ret
+
+flushBuffer:
+	push ax
+	push bx
+	push cx
+	push dx
+	
+	mov ah, 0x40
+	mov bx, word [outfd]
+	xor cx, cx
+	mov cl, byte [outbuffused]
+	mov dx, word [outbuffaddr]
+	int 0x21
+	mov byte [outbuffused], 0
+
+	pop dx
+	pop cx
+	pop bx
+	pop ax
+	ret
+
+; al - char
+fPutC:
+	push di
+	push bx
+
+	mov di, word [outbuffaddr]
+	xor bx, bx
+	mov bl, byte [outbuffused]
+	
+	cmp bl, BUFFER_SIZE
+	jnz .skip_writing
+		call flushBuffer
+	.skip_writing:
+	mov byte [di+bx], al
+	inc byte [outbuffused]
+
+	pop bx
+	pop di
+	ret
+
+; di - data, cx - cnt
+fPutArr:
+	test cx, cx
+	jnz .start_write
+	ret
+
+	.start_write:
+	push bx
+	push ax
+	xor bx, bx
+	.loop:
+		mov al, byte [di+bx]
+		call fPutC
+		inc bx
+		cmp bx, cx
+	jnz .loop
+	pop ax
+	pop bx
+	ret
 
 writeB:
 	push dx
@@ -196,8 +251,8 @@ writeB:
 	add dl, 'a' - 10	
 	.after_change:
 
-	mov ah, 0x02
-	int 0x21
+	mov al, dl
+	call fPutC
 
 	pop ax
 	push ax
@@ -211,8 +266,8 @@ writeB:
 	add dl, 'a' - 10	
 	.after_change2:
 
-	mov ah, 0x02
-	int 0x21
+	mov al, dl
+	call fPutC
 
 	pop ax
 	pop dx
@@ -225,6 +280,26 @@ writeW:
 	pop ax
 	call writeB
 	ret
+
+fWriteStrAddr:
+	push bx
+	push cx
+	xor bx, bx
+	.loop:
+		inc bx
+		cmp byte [di+bx-1], 0
+	jnz .loop
+	dec bx
+
+	mov cx, bx
+	call fPutArr
+
+	pop cx
+	pop bx
+	ret
+
+writeOutputFile:
+
 
 
 %include "inshan.asm"

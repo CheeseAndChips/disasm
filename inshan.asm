@@ -61,6 +61,7 @@ section .text
         ret
 
     procHandleAdd:
+        int 0x03
         mov bx, word [bx+2]
 
         push ax
@@ -134,8 +135,72 @@ section .text
     ; ax - instructions
     ; di - output
     procDecodeModRM:
-        mov di, dx
         push ax
+        mov di, cx
+        and al, 0xc0
+        cmp al, 0x00 ; mod=00
+        jz .mod_00
+
+        cmp al, 0x40 ; mod=10
+        jz .mod_01
+
+        cmp al, 0x80
+        jz .mod_10
+
+        cmp al, 0xc0
+        jz .mod_11
+
+        .mod_00:
+            pop ax
+            push ax
+            push dx
+            mov dl, '['
+            call pushC
+            call readDataW
+            call writeW
+            mov dl, ']'
+            call pushC
+            pop dx
+            jmp .post_mod
+            ; pop ax
+            ; and al, 0x07
+            ; cmp al, 0x06
+            ; jz .
+
+        .mod_01:
+            pop ax
+            push ax
+            call readDataB
+            test al, 0x80
+            jnz .has_sign
+
+            call writeW
+            jmp .post_mod
+
+            .has_sign:
+            mov dl, '-'
+            call pushC
+            neg al
+            call writeB
+            jmp .post_mod
+
+
+        .mod_10: ; DISP
+            
+        .mod_11: ; register
+            pop ax
+            push ax
+            and ah, 1
+            shl ah, 3
+            and al, 0x07
+            or al, ah
+            call decodeRegister
+            jmp .post_mod
+
+        .post_mod:
+        macPushZero
+        mov di, dx
+        pop ax
         and ah, 0x03
         cmp ah, 0x01
         jz .dataw
@@ -165,70 +230,8 @@ section .text
             call writeB
             jmp .post_data
         .post_data:
-
         macPushZero
-        int 0x03
-        pop ax
-        push ax
-        and al, 0xc0
-        cmp al, 0x00 ; mod=00
-        jz .mod_00
-
-        cmp al, 0x40 ; mod=10
-        jz .mod_01
-
-        cmp al, 0x80
-        jz .mod_10
-
-        cmp al, 0xc0
-        jz .mod_11
-
-        .mod_00:
-
-            ; pop ax
-            ; and al, 0x07
-            ; cmp al, 0x06
-            ; jz .
-
-        .mod_01:
-            pop ax
-            call readDataB
-            test al, 0x80
-            jnz .has_sign
-
-            call writeW
-            ret
-
-            .has_sign:
-            mov dl, '-'
-            call pushC
-            neg al
-            call writeB
-            neg al
-            ret
-
-
-        .mod_10: ; DISP
-            pop ax
-            mov dl, '['
-            call pushC
-            call readDataW
-            call writeW
-            mov dl, ']'
-            call pushC
-            ret
-        .mod_11: ; register
-            int 0x03
-            pop ax
-            and ah, 1
-            shl ah, 3
-            and al, 0x07
-            or al, ah
-            mov di, cx
-            int 0x03
-            call decodeRegister
-            macPushZero
-            ret
+        ret
 
     procHandleSingleByte:
         xor cx, cx

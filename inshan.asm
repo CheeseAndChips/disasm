@@ -104,33 +104,18 @@ section .text
         .handle_reg_mem:
             pop ax
 
+
+
             jmp .finished
 
         .handle_imm_reg_mem:
             pop ax
             mov ah, al
             call readByte
-
+            mov di, cx
             call procDecodeModRM
-
-            ; and ah, 0x3
-            ; cmp ah, 0x1
-            ; jz .sw_01
-
-            ; cmp ah, 0x3
-            ; jz .sw_11
-
-            ; cmp ah, 0x00
-            ; jz .sw_00
-
-            ; .sw_01:
-            
-            ; mov di, cx
-            
-
-            ; .sw_11:
-
-            ; .sw_00:
+            mov di, dx
+            call procGetData
 
             jmp .finished
 
@@ -155,83 +140,104 @@ section .text
     ; ax - instructions
     ; di - output
     procDecodeModRM:
-        push ax
-        mov di, cx
+        sub sp, 2
+        int 0x03
+        push bp
+        mov bp, sp
+        mov word [bp], ax
+
         and al, 0xc0
-        cmp al, 0x00 ; mod=00
-        jz .mod_00
-
-        cmp al, 0x40 ; mod=10
-        jz .mod_01
-
-        cmp al, 0x80
-        jz .mod_10
-
         cmp al, 0xc0
         jz .mod_11
 
+        push dx
+        mov dl, '['
+        call pushC
+        pop dx
+
+        cmp al, 0x00
+        jne .decode_rm
+        mov ax, [bp]
+        and al, 0x7
+        cmp al, 0x6
+        jne .decode_rm
+
+        jmp .skip_rm
+
+        .decode_rm:
+        mov ax, [bp]
+        call getRMTable
+        call pushArr
+
+        .skip_rm:
+        mov ax, [bp]
+        and al, 0xc0
+        cmp al, 0x00
+        je .mod_00
+
+        cmp al, 0x40
+        je .mod_01
+
+        cmp al, 0x80
+        je .mod_10
+
         .mod_00:
-            pop ax
-            push dx
-            push ax
-            mov dl, '['
-            call pushC
+            mov ax, [bp]
             and al, 0x7
             cmp al, 0x6
-            jz .abs_addr
-            
-            call getRMTable
-            call pushArr
-            dec di
-            mov dl, ']'
-            call pushC
-            pop dx
-            
-            jmp .post_mod
+            jnz .skip_read
 
-            .abs_addr:
-            call pushC
             call readDataW
             call writeW
-            mov dl, ']'
-            call pushC
-            pop dx
+            inc di
+
+            .skip_read:
+            dec di
             jmp .post_mod
 
         .mod_01:
-            pop ax
-            push ax
             call readDataB
             test al, 0x80
             jnz .has_sign
 
-            call writeW
+            call writeB
             jmp .post_mod
 
             .has_sign:
+            dec di
             mov dl, '-'
             call pushC
             neg al
             call writeB
             jmp .post_mod
-
-
-        .mod_10: ; DISP
-            
+        .mod_10:
+            call readDataW
+            call writeW  
+            jmp .post_mod
         .mod_11: ; register
-            pop ax
-            push ax
+            mov ax, [bp]
             and ah, 1
             shl ah, 3
             and al, 0x07
             or al, ah
             call decodeRegister
-            jmp .post_mod
+            jmp .post_brackets
 
         .post_mod:
+        push dx
+        mov dl, ']'
+        call pushC
+        pop dx
+        .post_brackets:
         macPushZero
-        mov di, dx
-        pop ax
+        mov ax, [bp]
+        pop bp
+        add sp, 2
+        ret
+
+    procGetData:
+        push ax
+        
         and ah, 0x03
         cmp ah, 0x01
         jz .dataw
@@ -255,13 +261,17 @@ section .text
             cmp al, 0x80
             jnz .no_negative
             neg al
+            push dx
             mov dl, '-'
             call pushC
+            pop dx
             .no_negative:
             call writeB
             jmp .post_data
+        
         .post_data:
         macPushZero
+        pop ax
         ret
 
     procHandleSingleByte:

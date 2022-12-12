@@ -1,8 +1,7 @@
 org 100h
 
 section .text
-	aas
-	ret
+	add bp, 0x0c
 	mov ax, 0x1234
 	add al, 0x02
 	mov ax, 0x4c00

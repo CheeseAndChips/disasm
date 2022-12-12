@@ -18,6 +18,15 @@ MOV;10111101;procHandleMove
 MOV;10111110;procHandleMove
 MOV;10111111;procHandleMove
 
+ADD;00000000;procHandleAdd
+ADD;00000001;procHandleAdd
+ADD;00000010;procHandleAdd
+ADD;00000011;procHandleAdd
+
+ADD;10000000;procHandleAdd
+ADD;10000001;procHandleAdd
+ADD;10000011;procHandleAdd
+
 ADD;00000100;procHandleAdd
 ADD;00000101;procHandleAdd
 

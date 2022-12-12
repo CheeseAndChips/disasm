@@ -71,7 +71,7 @@ section .text
 
 	mov word [currentbyte], 0x100
 
-	mov cx, 3
+	mov cx, 1
 	.loop:
 		push cx
 		mov byte [readcnt], 0
@@ -210,6 +210,7 @@ readByte:
 	push bx
 	push cx
 	push dx
+	push ax
 
 	jmp pasbuff
 	buff: db 0
@@ -223,11 +224,12 @@ readByte:
 
 	test ax, ax
 	jnz .bytes_left
+	pop ax
 	stc
 	jmp .skip_write
 	
 	.bytes_left:
-	xor ax, ax
+	pop ax
 	mov al, byte [buff]
 
 	xor bx, bx

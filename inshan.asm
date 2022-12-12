@@ -27,7 +27,9 @@ section .data
 
 section .text
     procHandleMove:
-        test al, 0x40
+        mov bx, word [bx+2]
+
+        test al, 0x40 ; todo fix
         jz .handle_imm
         
         
@@ -45,7 +47,6 @@ section .text
             mov di, dx
             test al, 0x08
             jz .data_byte
-                int 0x03
                 call readDataW
                 call writeW
                 jmp .noelse
@@ -57,27 +58,64 @@ section .text
             jmp .finished
 
         .finished:
-        mov bx, word [bx+2]
         ret
 
     procHandleAdd:
-        test al, 0xfc
-        jz .handle_reg_mem
+        mov bx, word [bx+2]
 
-        test al, 0x7c
-        jz .handle_imm_reg_mem
+        push ax
+        and al, 0xfe
 
-        test al, 0xfa
+        cmp al, 0x04
         jz .handle_imm_acc
 
+        and al, 0xfc
+        cmp al, 0x00
+        jz .handle_reg_mem
+
+        cmp al, 0x80
+        jz .handle_imm_reg_mem
+
         stc
+        pop ax
         ret
 
         .handle_reg_mem:
+            pop ax
+
+            jmp .finished
 
         .handle_imm_reg_mem:
+            pop ax
+            mov ah, al
+            call readByte
+
+            call procDecodeModRM
+
+            ; and ah, 0x3
+            ; cmp ah, 0x1
+            ; jz .sw_01
+
+            ; cmp ah, 0x3
+            ; jz .sw_11
+
+            ; cmp ah, 0x00
+            ; jz .sw_00
+
+            ; .sw_01:
+            
+            ; mov di, cx
+            
+
+            ; .sw_11:
+
+            ; .sw_00:
+
+            jmp .finished
 
         .handle_imm_acc:
+            pop ax
+
             test al, 1
             jz .handle_al
             macWriteStrAddrSize _AX, 2
@@ -93,6 +131,105 @@ section .text
         .finished:
         ret
 
+    ; ax - instructions
+    ; di - output
+    procDecodeModRM:
+        mov di, dx
+        push ax
+        and ah, 0x03
+        cmp ah, 0x01
+        jz .dataw
+        cmp ah, 0x00
+        jz .datab
+        cmp ah, 0x03
+        jz .datasb
+        
+        .dataw:
+            call readDataW
+            call writeW
+            jmp .post_data
+
+        .datab:
+            call readDataB
+            call writeB
+            jmp .post_data
+
+        .datasb:
+            call readDataB
+            cmp al, 0x80
+            jnz .no_negative
+            neg al
+            mov dl, '-'
+            call pushC
+            .no_negative:
+            call writeB
+            jmp .post_data
+        .post_data:
+
+        macPushZero
+        int 0x03
+        pop ax
+        push ax
+        and al, 0xc0
+        cmp al, 0x00 ; mod=00
+        jz .mod_00
+
+        cmp al, 0x40 ; mod=10
+        jz .mod_01
+
+        cmp al, 0x80
+        jz .mod_10
+
+        cmp al, 0xc0
+        jz .mod_11
+
+        .mod_00:
+
+            ; pop ax
+            ; and al, 0x07
+            ; cmp al, 0x06
+            ; jz .
+
+        .mod_01:
+            pop ax
+            call readDataB
+            test al, 0x80
+            jnz .has_sign
+
+            call writeW
+            ret
+
+            .has_sign:
+            mov dl, '-'
+            call pushC
+            neg al
+            call writeB
+            neg al
+            ret
+
+
+        .mod_10: ; DISP
+            pop ax
+            mov dl, '['
+            call pushC
+            call readDataW
+            call writeW
+            mov dl, ']'
+            call pushC
+            ret
+        .mod_11: ; register
+            int 0x03
+            pop ax
+            and ah, 1
+            shl ah, 3
+            and al, 0x07
+            or al, ah
+            mov di, cx
+            int 0x03
+            call decodeRegister
+            macPushZero
+            ret
+
     procHandleSingleByte:
         xor cx, cx
         xor dx, dx
@@ -105,6 +242,7 @@ section .text
         push cx
 
         mov bx, registers
+        and ax, 0xf
         shl ax, 1
         add bx, ax
 

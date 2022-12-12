@@ -107,8 +107,6 @@ section .text
             call readByte
             push ax
 
-            int 0x03
-
             mov di, cx
             call procDecodeModRM
             mov di, dx
@@ -142,15 +140,27 @@ section .text
 
             test al, 1
             jz .handle_al
-            macWriteStrAddrSize _AX, 2
-            call readDataW
-            call writeW
-            jmp .finished
+                mov dx, word [_AX]
+                mov di, cx
+                call pushC
+                mov dl, dh
+                call pushC
+                mov di, dx
+                call readDataW
+                call writeW
+                macPushZero
+                jmp .finished
             .handle_al:
-            macWriteStrAddrSize _AL, 2
-            call readDataB
-            call writeB
-            jmp .finished
+                mov dx, word [_AL]
+                mov di, cx
+                call pushC
+                mov dl, dh
+                call pushC
+                mov di, dx
+                call readDataB
+                call writeB
+                macPushZero
+                jmp .finished
 
         .finished:
         ret

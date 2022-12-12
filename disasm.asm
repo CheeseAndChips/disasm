@@ -71,7 +71,7 @@ section .text
 
 	mov word [currentbyte], 0x100
 
-	mov cx, 2
+	mov cx, 89
 	.loop:
 		push cx
 		mov byte [readcnt], 0
@@ -123,9 +123,11 @@ procDecodeByte:
 	macExitProgram
 	.no_failure:
 
+	int 0x03
+
 	push bx
 	push cx
-	push dx
+	push dx ; ff7e
 
 	lea di, [LINE_BUFFER]; FFDE
 	mov ax, [currentbyte]
@@ -292,6 +294,7 @@ fPutC:
 	cmp bl, BUFFER_SIZE
 	jnz .skip_writing
 		call flushBuffer
+		xor bx, bx
 	.skip_writing:
 	mov byte [di+bx], al
 	inc byte [outbuffused]

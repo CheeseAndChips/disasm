@@ -71,7 +71,7 @@ section .text
 
 	mov word [currentbyte], 0x100
 
-	mov cx, 1
+	mov cx, 2
 	.loop:
 		push cx
 		mov byte [readcnt], 0

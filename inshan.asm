@@ -103,9 +103,27 @@ section .text
 
         .handle_reg_mem:
             pop ax
+            mov ah, al
+            call readByte
+            push ax
 
+            int 0x03
 
+            mov di, cx
+            call procDecodeModRM
+            mov di, dx
+            and al, 0x38
+            shr al, 3
+            and ah, 1
+            shl ah, 3
+            or al, ah
+            call decodeRegister
+            macPushZero
 
+            pop ax
+            and ah, 0x02
+            jz .finished
+            xchg cx, dx
             jmp .finished
 
         .handle_imm_reg_mem:
@@ -140,9 +158,8 @@ section .text
     ; ax - instructions
     ; di - output
     procDecodeModRM:
-        sub sp, 2
-        int 0x03
         push bp
+        sub sp, 2
         mov bp, sp
         mov word [bp], ax
 
@@ -231,8 +248,8 @@ section .text
         .post_brackets:
         macPushZero
         mov ax, [bp]
-        pop bp
         add sp, 2
+        pop bp
         ret
 
     procGetData:

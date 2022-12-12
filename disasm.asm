@@ -349,6 +349,21 @@ pushC:
 	inc di
 	ret
 
+pushArr:
+	push dx
+	cmp byte [si], 0
+	jnz .skip_ret
+	pop dx
+	ret
+	.skip_ret:
+		mov dl, byte [si]
+		call pushC
+		inc si
+		cmp byte [si], 0
+		jnz .skip_ret
+	pop dx
+	ret
+
 writeB:
 	push dx
 	push ax

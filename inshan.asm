@@ -24,6 +24,27 @@ section .data
         _SI: db "SI"
         _DI: db "DI"
 
+    _BX_SI_DISP: db "BX+SI+", 0
+    _BX_DI_DISP: db "BX+DI+", 0
+    _BP_SI_DISP: db "BP+SI+", 0
+    _BP_DI_DISP: db "BP+DI+", 0
+    _SI_DISP: db "SI+", 0
+    _DI_DISP: db "DI+", 0
+    _BP_DISP: db "BP+", 0
+    _BX_DISP: db "BX+", 0
+
+
+    rm_table:
+        dw _BX_SI_DISP
+        dw _BX_DI_DISP
+        dw _BP_SI_DISP
+        dw _BP_DI_DISP
+        dw _SI_DISP
+        dw _DI_DISP
+        dw _BP_DISP
+        dw _BX_DISP
+        
+
 
 section .text
     procHandleMove:
@@ -61,7 +82,6 @@ section .text
         ret
 
     procHandleAdd:
-        int 0x03
         mov bx, word [bx+2]
 
         push ax
@@ -152,9 +172,24 @@ section .text
 
         .mod_00:
             pop ax
-            push ax
             push dx
+            push ax
             mov dl, '['
+            call pushC
+            and al, 0x7
+            cmp al, 0x6
+            jz .abs_addr
+            
+            call getRMTable
+            call pushArr
+            dec di
+            mov dl, ']'
+            call pushC
+            pop dx
+            
+            jmp .post_mod
+
+            .abs_addr:
             call pushC
             call readDataW
             call writeW
@@ -162,10 +197,6 @@ section .text
             call pushC
             pop dx
             jmp .post_mod
-            ; pop ax
-            ; and al, 0x07
-            ; cmp al, 0x06
-            ; jz .
 
         .mod_01:
             pop ax
@@ -258,6 +289,19 @@ section .text
         pop bx
         pop ax
 
+        ret
+
+    getRMTable:
+        push ax
+        push bx
+        xor ah, ah
+        and al, 0x7
+        shl al, 1
+        add ax, rm_table
+        mov bx, ax
+        mov si, [bx]
+        pop bx
+        pop ax
         ret
 
     readDataB:

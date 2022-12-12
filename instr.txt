@@ -20,3 +20,6 @@ MOV;10111111;procHandleMove
 
 ADD;00000100;procHandleAdd
 ADD;00000101;procHandleAdd
+
+RET;11000011;procHandleSingleByte
+AAS;00111111;procHandleSingleByte

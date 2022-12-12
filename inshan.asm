@@ -1,5 +1,8 @@
-%macro writeInstrName 0
-
+%macro macPushZero 0
+    push dx
+    mov dl, 0
+    call pushC
+    pop dx
 %endmacro
 
 section .data
@@ -27,30 +30,34 @@ section .text
         test al, 0x40
         jz .handle_imm
         
-        macWriteStr "Failed decoding move", crlf
-        call exitProgram
+        
+        stc
+        ret
 
         .handle_imm:
-            macFWriteStrAddr word [bx+2]
-            ;macWriteStrAddr word [bx+2] ; write instruction
-            ;macWriteStr " "
-
             push ax
             and ax, 0x0f
+            mov di, cx
             call decodeRegister
+            macPushZero
             pop ax
 
+            mov di, dx
             test al, 0x08
             jz .data_byte
+                int 0x03
                 call readDataW
                 call writeW
-                jmp .finished
+                jmp .noelse
             .data_byte:
                 call readDataB
                 call writeB
+            .noelse:
+            macPushZero
             jmp .finished
 
         .finished:
+        mov bx, word [bx+2]
         ret
 
     procHandleAdd:
@@ -63,8 +70,8 @@ section .text
         test al, 0xfa
         jz .handle_imm_acc
 
-        macWriteStr "Failed decoding add", crlf
-        call exitProgram
+        stc
+        ret
 
         .handle_reg_mem:
 
@@ -86,17 +93,27 @@ section .text
         .finished:
         ret
 
+    procHandleSingleByte:
+        xor cx, cx
+        xor dx, dx
+        mov bx, word [bx+2]
         ret
 
     decodeRegister:
         push ax
         push bx
+        push cx
 
         mov bx, registers
         shl ax, 1
         add bx, ax
-        macWriteStrAddrSize bx, 2
 
+        mov cx, word [bx]
+        mov word[di], cx
+
+        add di, 2
+
+        pop cx
         pop bx
         pop ax
 
@@ -109,8 +126,9 @@ section .text
     readDataW:
         push bx
         call readByte
-        mov bx, ax
+        mov bl, al
         call readByte
         mov bh, al
+        mov ax, bx
         pop bx
         ret

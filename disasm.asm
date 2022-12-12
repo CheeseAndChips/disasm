@@ -15,10 +15,15 @@ section .data
 	crlf_: db crlf, 0
 
 %define BUFFER_SIZE 255
+%define OPERAND_SIZE 32
 
 section .text
 	%assign BP_OFFSET 0
 	macReserveVar OUTBUFFER, BUFFER_SIZE
+	macReserveVar LEFT_OPERAND, OPERAND_SIZE
+	macReserveVar RIGHT_OPERAND, OPERAND_SIZE
+	macReserveVar LINE_BUFFER, 32
+
 	sub sp, BP_OFFSET
 	mov bp, sp
 
@@ -72,32 +77,101 @@ section .text
 
 	mov word [currentbyte], 0x100
 
-	.decode_loop:
-		call readByte
-		push ax
-		mov bx, instrDecodeTable
-		shl ax, 2
-		add bx, ax
-		pop ax
+	call readByte
+	push ax
+	mov bx, instrDecodeTable
+	shl ax, 2
+	add bx, ax
+	pop ax
 
-		push dx
-		mov dx, word [bx]
-		test dx, dx
-		jz .write_failure		
-		pop dx
+	push dx
+	mov dx, word [bx]
+	test dx, dx
+	jz .write_failure		
+	pop dx
 
-		mov ax, [currentbyte]
-		call writeW
-		call [bx]
+	; mov ax, [currentbyte]
+	; call writeW
 
-		xor ax, ax
-		; mov al, byte [readcnt]
-		; mov byte [readcnt], 0
-		; add word [currentbyte], ax
+	; in:
+	; al - opcode
+	; cx - left operand
+	; dx - right operand
+	; out:
+	; bx - instruction string
+	; cx - left operand
+	; dx - right operand
+	lea cx, [LEFT_OPERAND]
+	lea dx, [RIGHT_OPERAND]
+	clc
+	call [bx]
 
-		call writeParsedBytes
-		macFWriteStrAddr crlf_
-		loop .decode_loop
+	jnc .no_failure
+	macWriteStr "Failed reading byte", crlf
+	macExitProgram
+	.no_failure
+
+	push bx
+	push cx
+	push dx
+
+	lea di, [LINE_BUFFER]; FFDE
+	mov ax, [currentbyte]
+	call writeW
+
+	mov dl, ' '
+	call pushC
+	call pushC
+
+	mov si, readnow
+	xor cx, cx
+	mov cl, byte [readcnt]
+	.byteloop:
+		mov al, byte [si]
+		inc si
+		call writeB
+	loop .byteloop
+
+	mov dl, 0
+	call pushC
+
+	lea di, [LINE_BUFFER]
+	.byteloop2:
+		mov al, byte [di]
+		inc di
+		test al, al
+		jz .past_loop2
+		call fPutC
+	jmp .byteloop2
+
+	.past_loop2:
+
+	mov al, ' '
+	call fPutC
+	call fPutC
+
+	pop dx
+	pop cx
+	pop bx
+
+	mov di, bx
+	call fPutArrZero
+	test cx, cx
+	jz .skip_args
+	mov al, ' '
+	call fPutC
+	mov di, cx
+	call fPutArrZero
+	test dx, dx
+	jz .skip_args
+
+	mov al, ','
+	call fPutC
+	mov di, dx
+	call fPutArrZero
+
+	.skip_args:
+	macFWriteStr crlf
 
 	call exitProgram
 	.write_failure:
@@ -148,7 +222,6 @@ readByte:
 	mov al, byte [buff]
 
 	xor bx, bx
-	int 0x03
 	mov bl, byte [readcnt]
 	mov [bx+readnow], al
 	inc byte [readcnt]
@@ -162,7 +235,6 @@ readByte:
 fillBuffer:
 
 writeParsedBytes:
-	int 0x03
 	push cx
 	push di
 	xor cx, cx
@@ -237,6 +309,35 @@ fPutArr:
 	pop bx
 	ret
 
+; di - data
+fPutArrZero:
+	push cx
+	push ax
+	push di
+
+	xor cx, cx
+	.loop:
+		mov al, byte [di]
+		inc di
+		test al, al
+		jz .do_write
+		inc cx
+	jmp .loop
+
+	.do_write:
+	pop di
+	call fPutArr
+	pop ax
+	pop cx
+	ret
+
+; dl - char
+; di - destination
+pushC:
+	mov byte [di], dl
+	inc di
+	ret
+
 writeB:
 	push dx
 	push ax
@@ -248,11 +349,10 @@ writeB:
 	add dl, '0'
 	jmp .after_change
 	.add_letter:
-	add dl, 'a' - 10	
+	add dl, 'A' - 10	
 	.after_change:
 
-	mov al, dl
-	call fPutC
+	call pushC
 
 	pop ax
 	push ax
@@ -266,8 +366,7 @@ writeB:
 	add dl, 'a' - 10	
 	.after_change2:
 
-	mov al, dl
-	call fPutC
+	call pushC
 
 	pop ax
 	pop dx

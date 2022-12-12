@@ -1,7 +1,9 @@
 org 100h
 
 section .text
-	mov al, 0x34
+	aas
+	ret
+	mov ax, 0x1234
 	add al, 0x02
 	mov ax, 0x4c00
 	int 0x21

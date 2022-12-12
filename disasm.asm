@@ -68,15 +68,27 @@ section .text
 	int 0x21
 	jc showFileOpenError
 	mov [outfd], ax
-	
-	; clear buffer
-	; mov word [INBUFFER], 0
-
-	; lea ax, [INBUFFER]
-	; mov [inbufferaddr], ax
 
 	mov word [currentbyte], 0x100
 
+	mov cx, 3
+	.loop:
+		push cx
+		mov byte [readcnt], 0
+		call procDecodeByte
+		xor ax, ax
+		mov al, byte [readcnt]
+		add word [currentbyte], ax
+		pop cx
+	loop .loop
+
+	call exitProgram
+	write_failure:
+	macWriteStr "Failed decoding byte", crlf
+	call exitProgram
+
+
+procDecodeByte:
 	call readByte
 	push ax
 	mov bx, instrDecodeTable
@@ -87,7 +99,7 @@ section .text
 	push dx
 	mov dx, word [bx]
 	test dx, dx
-	jz .write_failure		
+	jz write_failure		
 	pop dx
 
 	; mov ax, [currentbyte]
@@ -109,7 +121,7 @@ section .text
 	jnc .no_failure
 	macWriteStr "Failed reading byte", crlf
 	macExitProgram
-	.no_failure
+	.no_failure:
 
 	push bx
 	push cx
@@ -173,10 +185,7 @@ section .text
 	.skip_args:
 	macFWriteStr crlf
 
-	call exitProgram
-	.write_failure:
-	macWriteStr "Failed decoding byte", crlf
-	call exitProgram
+	ret
 
 exitProgram:
 	call flushBuffer
@@ -363,7 +372,7 @@ writeB:
 	add dl, '0'
 	jmp .after_change2
 	.add_letter2:
-	add dl, 'a' - 10	
+	add dl, 'A' - 10	
 	.after_change2:
 
 	call pushC

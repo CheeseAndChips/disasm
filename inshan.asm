@@ -57,44 +57,122 @@ section .data
 
 
 section .text
-    procHandleMove:
+    procHandleMovRM:
         mov bx, word [bx+2]
 
-        test al, 0x40 ; todo fix
-        jz .handle_imm
+        mov ah, al
+        call readByte
         
-        
-        stc
+        mov di, cx
+        push ax
+        shr al, 3
+        and al, 0x7
+        and ah, 1
+        shl ah, 3
+        or al, ah
+        call decodeRegister
+        macPushZero
+        pop ax
+
+        mov di, dx
+        call procDecodeModRM
+        macPushZero
+
+        test ah, 2
+        jnz .skip_swap
+        xchg cx, dx
+        .skip_swap:
+
         ret
 
-        .handle_imm:
-            push ax
-            and ax, 0x0f
-            mov di, cx
-            call decodeRegister
-            macPushZero
-            pop ax
+    procHandleMovImmRM:
+        mov bx, word [bx+2]
 
-            mov di, dx
-            test al, 0x08
-            jz .data_byte
-                call readDataW
-                call writeW
-                jmp .noelse
-            .data_byte:
-                call readDataB
-                call writeB
-            .noelse:
-            macPushZero
-            jmp .finished
+        mov ah, al
+        call readByte
 
-        .finished:
+        mov di, cx
+        call procDecodeModRM
+        macPushZero
+
+        mov di, dx
+        test ah, 1
+        jnz .dataW
+            call readDataB
+            call writeB
+            jmp .done
+        .dataW:
+            call readDataW
+            call writeW
+
+        .done:
+        macPushZero
+
         ret
+
+    procHandleMovImmReg:
+        mov bx, word [bx+2]
+
+        mov di, cx
+        call decodeRegister
+        macPushZero
+
+        mov di, dx
+        test al, 0x08
+        jnz .dataW
+            call readDataB
+            call writeB
+            jmp .done
+        .dataW:
+            call readDataW
+            call writeW
+
+        .done:
+        macPushZero
+
+        ret
+
+    procHandleMovMemAX:
+        mov bx, word [bx+2]
+
+        test al, 0x01
+        mov di, cx
+        jnz .dataW
+            mov si, _AL
+            jmp .done
+        .dataW:
+            mov si, _AX
+        .done:
+        push ax
+        mov ax, word [si]
+        mov word [di], ax
+        pop ax
+        add di, 2
+        macPushZero
+
+        mov di, dx
+        push dx
+
+            mov dl, '['
+            call pushC
+            call readDataW
+            call writeW
+            mov dl, ']'
+            call pushC
+
+        pop dx
+        macPushZero
+
+        test al, 2
+        jz .skip_swap
+        xchg cx, dx
+        .skip_swap:
+
+        ret
+
 
     procHandleDispJump:
         mov bx, word [bx+2]
-
-        int 0x03
 
         mov ah, al
         call readByte

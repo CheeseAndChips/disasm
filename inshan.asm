@@ -5,6 +5,14 @@
     pop dx
 %endmacro
 
+%macro macModEntry 2
+    cmp al, (%1 << 3)
+    jnz %%skip
+    mov bx, %2
+    jmp .label_assigned
+    %%skip:
+%endmacro
+
 section .data
     registers:
         _AL: db "AL"
@@ -81,86 +89,83 @@ section .text
         .finished:
         ret
 
-    procHandleAdd:
+    
+    procHandleImmAcc:
         mov bx, word [bx+2]
 
+        test al, 1
+        jz .handle_al
+            mov dx, word [_AX]
+            mov di, cx
+            call pushC
+            mov dl, dh
+            call pushC
+            macPushZero
+            mov di, dx
+            call readDataW
+            call writeW
+            macPushZero
+            ret
+        .handle_al:
+            mov dx, word [_AL]
+            mov di, cx
+            call pushC
+            mov dl, dh
+            call pushC
+            mov di, dx
+            macPushZero
+            call readDataB
+            call writeB
+            macPushZero
+            ret
+
+    procHandleImmRegMem:
+        mov ah, al
+        call readByte
+        
         push ax
+            and al, 00111000b
+        
+            macModEntry 000b, _ADD
+            macModEntry 010b, _ADC
+            macModEntry 101b, _SUB
+            macModEntry 011b, _SBB
+            macModEntry 111b, _CMP
 
-        test al, 0x04
-        jnz .handle_imm_acc
+            stc
+            ret
 
-        test al, 0x80
-        jnz .handle_imm_reg_mem
-
-        jmp .handle_reg_mem
-
-        stc
+            .label_assigned:
         pop ax
+
+        mov di, cx
+        call procDecodeModRM
+        mov di, dx
+        call procGetData
         ret
 
-        .handle_reg_mem:
-            pop ax
-            mov ah, al
-            call readByte
-            push ax
+    procHandleRegMem:
+        mov bx, word [bx+2]
 
-            mov di, cx
-            call procDecodeModRM
-            mov di, dx
-            and al, 0x38
-            shr al, 3
-            and ah, 1
-            shl ah, 3
-            or al, ah
-            call decodeRegister
-            macPushZero
+        mov ah, al
+        call readByte
+        push ax
 
-            pop ax
-            and ah, 0x02
-            jz .finished
-            xchg cx, dx
-            jmp .finished
+        mov di, cx
+        call procDecodeModRM
+        mov di, dx
+        and al, 0x38
+        shr al, 3
+        and ah, 1
+        shl ah, 3
+        or al, ah
+        call decodeRegister
+        macPushZero
 
-        .handle_imm_reg_mem:
-            pop ax
-            mov ah, al
-            call readByte
-            mov di, cx
-            call procDecodeModRM
-            mov di, dx
-            call procGetData
-
-            jmp .finished
-
-        .handle_imm_acc:
-            pop ax
-
-            test al, 1
-            jz .handle_al
-                mov dx, word [_AX]
-                mov di, cx
-                call pushC
-                mov dl, dh
-                call pushC
-                macPushZero
-                mov di, dx
-                call readDataW
-                call writeW
-                macPushZero
-                jmp .finished
-            .handle_al:
-                mov dx, word [_AL]
-                mov di, cx
-                call pushC
-                mov dl, dh
-                call pushC
-                mov di, dx
-                macPushZero
-                call readDataB
-                call writeB
-                macPushZero
-                jmp .finished
-
+        pop ax
+        and ah, 0x02
+        jz .finished
+        xchg cx, dx
         .finished:
         ret
 

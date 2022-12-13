@@ -12,6 +12,9 @@ with open('instr.txt', 'r') as f:
 		label, opcode, handler = line.split(';')
 		opcode = int(opcode, base=2)
 
+		if not label:
+			label = None
+
 		labels.add(label)
 		if instr[opcode] != None:
 			print(f'Duplicate on line {line}')
@@ -31,4 +34,7 @@ with open('insinc.asm', 'w') as f:
 			f.write(f'\t\tdw 0, 0\n')
 		else:
 			label, handler = instr[i]
-			f.write(f'\t\tdw {handler}, _{label}\n')
+			if not label:
+				f.write(f'\t\tdw {handler}, 0\n')
+			else:
+				f.write(f'\t\tdw {handler}, _{label}\n')

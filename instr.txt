@@ -18,41 +18,49 @@ MOV;10111101;procHandleMove
 MOV;10111110;procHandleMove
 MOV;10111111;procHandleMove
 
-ADD;00000000;procHandleAdd
-ADD;00000001;procHandleAdd
-ADD;00000010;procHandleAdd
-ADD;00000011;procHandleAdd
+ADD;00000000;procHandleRegMem
+ADD;00000001;procHandleRegMem
+ADD;00000010;procHandleRegMem
+ADD;00000011;procHandleRegMem
 
-ADD;10000000;procHandleAdd
-ADD;10000001;procHandleAdd
-ADD;10000011;procHandleAdd
+;10000000;procHandleImmRegMem
+;10000001;procHandleImmRegMem
+;10000011;procHandleImmRegMem
 
-ADD;00000100;procHandleAdd
-ADD;00000101;procHandleAdd
+ADD;00000100;procHandleImmAcc
+ADD;00000101;procHandleImmAcc
 
-ADC;00010100;procHandleAdd
-ADC;00010101;procHandleAdd
+ADC;00010000;procHandleRegMem
+ADC;00010001;procHandleRegMem
+ADC;00010010;procHandleRegMem
+ADC;00010011;procHandleRegMem
 
-ADC;00010000;procHandleAdd
-ADC;00010001;procHandleAdd
-ADC;00010010;procHandleAdd
-ADC;00010011;procHandleAdd
+ADC;00010100;procHandleImmAcc
+ADC;00010101;procHandleImmAcc
 
-SUB;00101000;procHandleAdd
-SUB;00101001;procHandleAdd
-SUB;00101010;procHandleAdd
-SUB;00101011;procHandleAdd
+SUB;00101000;procHandleRegMem
+SUB;00101001;procHandleRegMem
+SUB;00101010;procHandleRegMem
+SUB;00101011;procHandleRegMem
 
-SUB;00101100;procHandleAdd
-SUB;00101101;procHandleAdd
+SUB;00101100;procHandleImmAcc
+SUB;00101101;procHandleImmAcc
 
-SBB;00011000;procHandleAdd
-SBB;00011001;procHandleAdd
-SBB;00011010;procHandleAdd
-SBB;00011011;procHandleAdd
+SBB;00011000;procHandleRegMem
+SBB;00011001;procHandleRegMem
+SBB;00011010;procHandleRegMem
+SBB;00011011;procHandleRegMem
 
-SBB;00011100;procHandleAdd
-SBB;00011101;procHandleAdd
+SBB;00011100;procHandleImmAcc
+SBB;00011101;procHandleImmAcc
+
+CMP;00111000;procHandleRegMem
+CMP;00111001;procHandleRegMem
+CMP;00111010;procHandleRegMem
+CMP;00111011;procHandleRegMem
+
+CMP;00111100;procHandleImmAcc
+CMP;00111101;procHandleImmAcc
 
 
 

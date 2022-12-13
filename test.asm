@@ -1,6 +1,12 @@
 org 100h
 
 section .text
+	ADD		bx, 0x213
+	ADC		bx, 0x213
+	SUB		bx, 0x213
+	SBB		bx, 0x213
+	CMP		bx, 0x213
+
 	ADC     BP,[BX+DI+0x5678]
 	SUB     CX,[BX]
 	SUB     DX,[BX+0x78]

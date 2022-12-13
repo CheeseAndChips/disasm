@@ -26,7 +26,8 @@ with open('insinc.asm', 'w') as f:
 	f.write('section .data\n')
 	f.write('\tinstrLabels:\n')
 	for l in labels:
-		f.write(f'\t\t_{l}: db "{l}", 0\n')
+		if l:
+			f.write(f'\t\t_{l}: db "{l}", 0\n')
 	
 	f.write('\tinstrDecodeTable:\n')
 	for i in range(256):

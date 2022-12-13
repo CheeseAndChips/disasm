@@ -120,5 +120,14 @@ CALL;11111111;procHandleIndirect
 JMP;11101001;procHandleDirect
 JMP;11101010;procHandleIntersegment
 
+RETF;11001011;procHandleSingleByte
+RET;11000010;procHandleRetAdd
+RETF;11001010;procHandleRetAdd
+
+INT;11001101;procHandleInt
+INT;11001100;procHandleInt3
+
+INTO;11001110;procHandleSingleByte
+
 RET;11000011;procHandleSingleByte
 AAS;00111111;procHandleSingleByte

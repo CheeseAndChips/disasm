@@ -183,6 +183,39 @@ section .text
         macPushZero
         xor dx, dx
         ret
+
+    procHandleRetAdd:
+        mov bx, word [bx+2]
+
+        mov di, cx
+        call readDataW
+        call writeW
+        macPushZero
+
+        xor dx, dx
+        ret
+
+    procHandleInt:
+        mov bx, word [bx+2]
+        
+        mov di, cx
+        call readDataB
+        call writeB
+        macPushZero
+
+        xor dx, dx
+        ret
+
+    procHandleInt3:
+        mov bx, word [bx+2]
+        
+        mov di, cx
+        mov al, 0x03
+        call writeB
+        macPushZero
+
+        xor dx, dx
+        ret
     
     procHandleImmAcc:
         mov bx, word [bx+2]

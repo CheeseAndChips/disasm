@@ -6,6 +6,10 @@ section .text
 	SUB		bx, 0x213
 	SBB		bx, 0x213
 	CMP		bx, 0x213
+	XOR		bx, 0x213
+	AND		bx, 0x213
+	OR		bx, 0x213
+
 
 	ADC     BP,[BX+DI+0x5678]
 	SUB     CX,[BX]

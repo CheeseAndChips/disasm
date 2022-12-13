@@ -131,6 +131,9 @@ section .text
             macModEntry 101b, _SUB
             macModEntry 011b, _SBB
             macModEntry 111b, _CMP
+            macModEntry 100b, _AND
+            macModEntry 001b, _OR
+            macModEntry 110b, _XOR
 
             stc
             ret

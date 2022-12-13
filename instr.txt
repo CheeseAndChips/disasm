@@ -1,4 +1,4 @@
-NEG;MUL;IMUL;DIV;IDIV;NOT
+NEG;MUL;IMUL;DIV;IDIV;NOT;SHL;SHR;SAR;ROL;ROR;RCL;RCR
 
 MOV;10001000;procHandleMovRM
 MOV;10001001;procHandleMovRM
@@ -32,6 +32,11 @@ MOV;10100011;procHandleMovMemAX
 
 MOV;10001110;procHandleMovSegReg
 MOV;10001100;procHandleMovSegReg
+
+;11010000;procHandleLogic
+;11010001;procHandleLogic
+;11010010;procHandleLogic
+;11010011;procHandleLogic
 
 ADD;00000000;procHandleRegMem
 ADD;00000001;procHandleRegMem

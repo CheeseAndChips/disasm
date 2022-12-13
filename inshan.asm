@@ -59,6 +59,9 @@ section .data
         dw _BX_DISP
 
     _FAR: db "FAR ", 0
+
+    _WORDPTR: db "WORD PTR ", 0
+    _BYTEPTR: db "BYTE PTR ", 0
         
 
 
@@ -205,7 +208,49 @@ section .text
         jz .skip_swap
         xchg cx, dx
         .skip_swap:
-        ret       
+        ret
+
+    procHandleLogic:
+        mov ah, al
+        call readByte
+
+        mov di, cx
+        call procDecodeModRM
+        macPushZero
+
+        mov di, dx
+        test ah, 2
+        jz .write1
+            push ax
+            mov ax, [_CL]
+            mov word [di], ax
+            add di, 2
+            pop ax
+            jmp .done
+        .write1:
+            push dx
+            mov dl, '1'
+            call pushC
+            pop dx
+        .done:       
+        macPushZero
+
+        push ax
+            and al, 00111000b
+
+            macModEntry 100b, _SHL
+            macModEntry 101b, _SHR
+            macModEntry 111b, _SAR
+            macModEntry 000b, _ROL
+            macModEntry 001b, _ROR
+            macModEntry 010b, _RCL
+            macModEntry 011b, _RCR
+
+            stc
+            
+        .label_assigned:
+        pop ax
+        ret
 
     procHandleDispJump:
         mov bx, word [bx+2]
@@ -353,8 +398,8 @@ section .text
             call pushC
             mov dl, dh
             call pushC
-            mov di, dx
             macPushZero
+            mov di, dx
             call readDataB
             call writeB
             macPushZero
@@ -424,6 +469,17 @@ section .text
         and al, 0xc0
         cmp al, 0xc0
         jz .mod_11
+
+        push si
+        test ah, 1
+        je .dataW
+            mov si, _BYTEPTR
+            jmp .writeptr
+        .dataW:
+            mov si, _WORDPTR
+        .writeptr:
+        call pushArr
+        pop si
 
         push dx
         mov dl, '['

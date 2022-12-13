@@ -66,34 +66,6 @@ section .data
 
 
 section .text
-    procHandleMovRM:
-        mov bx, word [bx+2]
-
-        mov ah, al
-        call readByte
-        
-        mov di, cx
-        push ax
-        shr al, 3
-        and al, 0x7
-        and ah, 1
-        shl ah, 3
-        or al, ah
-        call decodeRegister
-        macPushZero
-        pop ax
-
-        mov di, dx
-        call procDecodeModRM
-        macPushZero
-
-        test ah, 2
-        jnz .skip_swap
-        xchg cx, dx
-        .skip_swap:
-
-        ret
-
     procHandleMovImmRM:
         mov bx, word [bx+2]
 

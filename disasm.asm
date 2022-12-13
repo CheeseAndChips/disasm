@@ -14,10 +14,13 @@ section .bss
 	RIGHT_OPERAND: resb OPERAND_SIZE
 	READCNT: resb 2
 	LINE_COUNTER: resb 2
+	INPUT_BUFFER: resb BUFFER_SIZE
 
 section .data
 	OUTBUFFERUSED: dw 0
 	CURRENTBYTE: dw 0x100
+	INPUT_FILLED: dw 0
+	INPUT_USED: dw 0
 
 	show_help_arg: db "/?", 0x0d
 	crlf_: db crlf, 0
@@ -133,6 +136,7 @@ procDecodeByte:
 	jmp .write_result
 	
 	.write_result:
+
 	call writeResult
 
 	ret
@@ -152,6 +156,8 @@ writeCSIP:
 	ret
 
 writeResult:
+	int 0x03
+
 	; 1. write decoded bytes
 	mov word [LINE_COUNTER], 0
 	mov di, BYTESREAD
@@ -186,7 +192,6 @@ writeResult:
 	mov di, cx
 	call fPutArrZero
 
-	int 0x03
 	test dx, dx
 	jz .done
 
@@ -237,41 +242,46 @@ showFileOpenError:
 
 
 readByte:
+	int 0x03
 	push bx
 	push cx
-	push dx
-	push ax
 
-	jmp pasbuff
-	buff: db 0
-	
-	pasbuff:
-	mov ah, 0x3f
-	mov bx, [INFD]
-	mov cx, 1
-	mov dx, buff
-	int 21h
+	mov bx, word [INPUT_USED]
+	mov cx, word [INPUT_FILLED]
 
-	test ax, ax
-	jnz .bytes_left
-	pop ax
-	stc
-	jmp .skip_write
-	
-	.bytes_left:
-	pop ax
-	mov al, byte [buff]
+	cmp bx, cx
+	jne .return_byte
+		push ax
+		push dx
+		mov ah, 0x3f
+		mov bx, word [INFD]
+		mov cx, BUFFER_SIZE
+		mov dx, INPUT_BUFFER
+		int 0x21
+
+		mov word [INPUT_FILLED], ax
+		mov word [INPUT_USED], 0
+		xor bx, bx
+
+		pop dx
+		test ax, ax
+		pop ax
+		jnz .return_byte
+		stc
+		jmp .return
+	.return_byte:
+	mov al, byte [INPUT_BUFFER+bx]
+	inc word [INPUT_USED]
 
 	mov bx, word [READCNT]
-	mov [bx+BYTESREAD], al
+	mov byte [BYTESREAD+bx], al
 	inc word [READCNT]
 
-	.skip_write:
-	pop dx
+	.return:
 	pop cx
 	pop bx
+	int 0x03
 	ret
-
 
 flushBuffer:
 	push ax

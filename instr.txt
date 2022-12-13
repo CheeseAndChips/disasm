@@ -147,5 +147,11 @@ INT;11001100;procHandleInt3
 
 INTO;11001110;procHandleSingleByte
 
+TEST;10000100;procHandleTestRMReg
+TEST;10000101;procHandleTestRMReg
+
+TEST;10101000;procHandleImmAcc
+TEST;10101001;procHandleImmAcc
+
 RET;11000011;procHandleSingleByte
 AAS;00111111;procHandleSingleByte

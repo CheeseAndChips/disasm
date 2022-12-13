@@ -252,6 +252,47 @@ section .text
         pop ax
         ret
 
+    procHandleTestRMReg:
+        mov bx, word [bx+2]
+
+        mov ah, al
+        call readByte
+        
+        mov di, cx
+        call procDecodeModRM
+        macPushZero
+
+        mov di, dx
+        and ah, 1
+        shl ah, 3
+        shr al, 3
+        and al, 0x7
+        or al, ah
+        call decodeRegister
+        macPushZero
+
+        ret
+
+    procHandleTestImmRM:
+        mov di, cx
+        call procDecodeModRM
+        macPushZero
+
+        mov di, dx
+
+        test ah, 1
+        jz .dataB
+            call readDataW
+            call writeW
+            jmp .done
+        .dataB:
+            call readDataB
+            call writeB
+        .done:
+        macPushZero
+
+        ret
+
     procHandleDispJump:
         mov bx, word [bx+2]
 
@@ -273,12 +314,16 @@ section .text
         mov ah, al
         call readByte
 
-        mov di, cx
-        call procDecodeModRM
-        macPushZero
-
         push ax
             and al, 00111000b
+
+            cmp al, (000b << 3)
+            jnz .skip_test
+                mov bx, _TEST
+                pop ax
+                call procHandleTestImmRM
+                ret
+            .skip_test:
 
             macModEntry 011b, _NEG
             macModEntry 100b, _MUL
@@ -286,11 +331,19 @@ section .text
             macModEntry 110b, _DIV
             macModEntry 111b, _IDIV
             macModEntry 010b, _NOT
-
+            
             stc
+            xor dx, dx
+            pop ax
+            ret
         .label_assigned:
-        xor dx, dx
         pop ax
+
+        mov di, cx
+        call procDecodeModRM
+        macPushZero
+
+        xor dx, dx
         ret
 
     procHandleDirect:
@@ -472,7 +525,7 @@ section .text
 
         push si
         test ah, 1
-        je .dataW
+        jnz .dataW
             mov si, _BYTEPTR
             jmp .writeptr
         .dataW:

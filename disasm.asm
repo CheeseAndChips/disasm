@@ -13,7 +13,7 @@ section .bss
 	LEFT_OPERAND: resb OPERAND_SIZE
 	RIGHT_OPERAND: resb OPERAND_SIZE
 	READCNT: resb 2
-	LINE_BUFFER: resb 32
+	LINE_COUNTER: resb 2
 
 section .data
 	OUTBUFFERUSED: dw 0
@@ -26,12 +26,15 @@ section .text
 start:
 	call openFiles
 
+	mov cx, 5
 	.loop:
+		push cx
 		mov word [READCNT], 0
 		call procDecodeByte
 		mov ax, word [READCNT]
 		add word [CURRENTBYTE], ax
-	jmp .loop
+		pop cx
+	loop .loop
 
 	call exitProgram
 	write_failure:
@@ -87,8 +90,12 @@ addBytesRead:
 	ret
 
 procDecodeByte:
+	call writeCSIP
+
+	; read instruction and find procedure for decoding
 	call readByte
 	push ax
+	xor ah, ah
 	mov bx, instrDecodeTable
 	shl ax, 2
 	add bx, ax
@@ -97,8 +104,16 @@ procDecodeByte:
 	push dx
 	mov dx, word [bx]
 	test dx, dx
-	jz write_failure		
 	pop dx
+	jnz .decode
+		; opcode not found, write DB {hex}
+		mov cx, LEFT_OPERAND
+		mov di, cx
+		call writeB
+		macPushZero
+		xor dx, dx
+		mov bx, _DB
+		jmp .write_result
 
 	; in:
 	; al - opcode
@@ -108,104 +123,100 @@ procDecodeByte:
 	; bx - instruction string
 	; cx - left operand
 	; dx - right operand
-	lea cx, [LEFT_OPERAND]
-	lea dx, [RIGHT_OPERAND]
+	.decode:
+	mov cx, LEFT_OPERAND
+	mov dx, RIGHT_OPERAND
 	clc
 	call [bx]
 
-	jnc .no_failure
-	macWriteStr "Failed reading byte", crlf
-	macExitProgram
-	.no_failure:
+	; unable to parse
 
-	push bx
-	push cx
-	push dx ; ff7e
-
-	lea di, [LINE_BUFFER]; FFDE
-
-	mov ax, 0x0736
-	call writeW
-	mov dl, ':'
-	call pushC
-
-	mov ax, [CURRENTBYTE]
-	call writeW
-
-	mov dl, ' '
-	call pushC
-
-	mov si, BYTESREAD
-	mov cx, word [READCNT]
-	.byteloop:
-		mov al, byte [si]
-		inc si
-		call writeB
-	loop .byteloop
-
-	mov dl, 0
-	call pushC
-
-	lea di, [LINE_BUFFER]
-	.byteloop2:
-		mov al, byte [di]
-		inc di
-		test al, al
-		jz .past_loop2
-		call fPutC
-	jmp .byteloop2
-
-	.past_loop2:
-
-	push cx
-	push dx
-		mov cx, 18
-		mov dx, word [READCNT]
-		shl dx, 1
-		sub cx, dx
-		mov al, ' '
-		.spaceloop:
-			call fPutC
-		loop .spaceloop
-	pop dx
-	pop cx
+	jnc .write_result
 	
+	.write_result:
+	call writeResult
 
-	pop dx
-	pop cx
-	pop bx
+	ret
 
-	mov di, bx
-	call fPutArrZero
-	test cx, cx
-	jz .skip_args
+writeCSIP:
+	mov ax, 0x0734
+	call fWriteW
 
-	call getArrSize
-	push cx
-	mov cx, ax
-	neg cx
-	add cx, 8
+	mov al, ':'
+	call fPutC
+
+	mov ax, word [CURRENTBYTE]
+	call fWriteW
+
 	mov al, ' '
-	int 0x03
-	.spaceloop2:
-		call fPutC
-	loop .spaceloop2
+	call fPutC
+
+	ret
+
+writeResult:
+	; 1. write decoded bytes
+	mov word [LINE_COUNTER], 0
+	mov di, BYTESREAD
+	push cx
+		mov cx, [READCNT]
+
+		.loop1:
+			mov al, [di]
+			inc di
+			call fWriteB
+		loop .loop1
+
+		mov cx, 18
+		call spaceFill
+
+		; 2. write instruction
+		mov word [LINE_COUNTER], 0
+		mov di, bx
+
+		call fPutArrZero
 	pop cx
 
+	test cx, cx
+	jz .done
+
+	.write_arg1:
+	push cx
+		mov cx, 8
+		call spaceFill
+	pop cx
 
 	mov di, cx
 	call fPutArrZero
+
+	int 0x03
 	test dx, dx
-	jz .skip_args
+	jz .done
 
 	mov al, ','
 	call fPutC
 	mov di, dx
 	call fPutArrZero
 
-	.skip_args:
-	macFWriteStr crlf
+	.done:
+	mov ax, 0x0a0d
+	call fPutW
+	ret
 
+spaceFill:
+	push ax
+	mov ax, word [LINE_COUNTER]
+	sub cx, ax
+	jg .do_write
+	pop ax
+	ret
+
+	.do_write:
+	mov al, ' '
+	.loop:
+		call fPutC
+	loop .loop
+
+	pop ax
 	ret
 
 exitProgram:
@@ -263,21 +274,6 @@ readByte:
 	pop bx
 	ret
 
-fillBuffer:
-
-writeParsedBytes:
-	push cx
-	push di
-	mov cx, word [READCNT]
-	mov di, BYTESREAD
-	.loop:
-		mov al, byte [di]
-		call writeB
-		inc di
-	loop .loop
-	pop di
-	pop cx
-	ret
 
 flushBuffer:
 	push ax
@@ -313,9 +309,48 @@ fPutC:
 	.skip_writing:
 	mov byte [di+bx], al
 	inc word [OUTBUFFERUSED]
+	inc word [LINE_COUNTER]
 
 	pop bx
 	pop di
+	ret
+
+fPutW:
+	push ax
+	call fPutC
+	mov al, ah
+	call fPutC
+	pop ax
+	ret
+
+fWriteW:
+	push di
+	sub sp, 4
+	mov di, sp
+
+	call writeW
+	mov cx, 4
+	mov di, sp
+	call fPutArr
+
+	add sp, 4
+	pop di
+	ret
+
+fWriteB:
+	push cx
+	push di
+	sub sp, 2
+	mov di, sp
+
+	call writeB
+	mov cx, 2
+	mov di, sp
+	call fPutArr
+	
+	add sp, 2
+	pop di
+	pop cx
 	ret
 
 ; di - data, cx - cnt
@@ -340,13 +375,18 @@ fPutArr:
 
 ; di - data
 fPutArrZero:
-	push cx
+	push di
 	push ax
-	call getArrSize
-	mov cx, ax
-	call fPutArr
+	.loop:
+		mov al, [di]
+		inc di
+		test al, al
+		jz .post_loop
+		call fPutC
+	jmp .loop
+	.post_loop:
 	pop ax
-	pop cx
+	pop di
 	ret
 
 getArrSize:
@@ -431,27 +471,6 @@ writeW:
 	pop ax
 	call writeB
 	ret
-
-fWriteStrAddr:
-	push bx
-	push cx
-	xor bx, bx
-	.loop:
-		inc bx
-		cmp byte [di+bx-1], 0
-	jnz .loop
-	dec bx
-
-	mov cx, bx
-	call fPutArr
-
-	pop cx
-	pop bx
-	ret
-
-writeOutputFile:
-
-
 
 %include "inshan.asm"
 %include "insinc.asm"

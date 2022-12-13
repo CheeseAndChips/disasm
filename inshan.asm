@@ -1,18 +1,3 @@
-%macro macPushZero 0
-    push dx
-    mov dl, 0
-    call pushC
-    pop dx
-%endmacro
-
-%macro macModEntry 2
-    cmp al, (%1 << 3)
-    jnz %%skip
-    mov bx, %2
-    jmp .label_assigned
-    %%skip:
-%endmacro
-
 section .data
     registers:
         _AL: db "AL"

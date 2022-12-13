@@ -50,21 +50,17 @@ section .text
 	%assign BP_OFFSET BP_OFFSET+%2
 %endmacro
 
-%macro macFWriteStr 1+
-    section .data
-        %%str: db %1
-        %%len: dw $-%%str
-    section .text
-        push di
-        push cx
-        mov di, %%str
-        mov cx, [%%len]
-        call fPutArr
-        pop cx
-        pop di
+%macro macPushZero 0
+    push dx
+    mov dl, 0
+    call pushC
+    pop dx
 %endmacro
 
-%macro macFWriteStrAddr 1
-    mov di, %1
-    call fWriteStrAddr
+%macro macModEntry 2
+    cmp al, (%1 << 3)
+    jnz %%skip
+    mov bx, %2
+    jmp .label_assigned
+    %%skip:
 %endmacro

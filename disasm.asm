@@ -137,11 +137,16 @@ procDecodeByte:
 	push dx ; ff7e
 
 	lea di, [LINE_BUFFER]; FFDE
+
+	mov ax, 0x0736
+	call writeW
+	mov dl, ':'
+	call pushC
+
 	mov ax, [currentbyte]
 	call writeW
 
 	mov dl, ' '
-	call pushC
 	call pushC
 
 	mov si, readnow
@@ -167,9 +172,20 @@ procDecodeByte:
 
 	.past_loop2:
 
-	mov al, ' '
-	call fPutC
-	call fPutC
+	push cx
+	push dx
+		mov cx, 18
+		xor dx, dx
+		mov dl, byte [readcnt]
+		shl dl, 1
+		sub cx, dx
+		mov al, ' '
+		.spaceloop:
+			call fPutC
+		loop .spaceloop
+	pop dx
+	pop cx
+	
 
 	pop dx
 	pop cx
@@ -179,8 +195,20 @@ procDecodeByte:
 	call fPutArrZero
 	test cx, cx
 	jz .skip_args
+
+	call getArrSize
+	push cx
+	mov cx, ax
+	neg cx
+	add cx, 8
 	mov al, ' '
-	call fPutC
+	int 0x03
+	.spaceloop2:
+		call fPutC
+	loop .spaceloop2
+	pop cx
+
+
 	mov di, cx
 	call fPutArrZero
 	test dx, dx
@@ -334,6 +362,15 @@ fPutArr:
 fPutArrZero:
 	push cx
 	push ax
+	call getArrSize
+	mov cx, ax
+	call fPutArr
+	pop ax
+	pop cx
+	ret
+
+getArrSize:
+	push cx
 	push di
 
 	xor cx, cx
@@ -341,14 +378,13 @@ fPutArrZero:
 		mov al, byte [di]
 		inc di
 		test al, al
-		jz .do_write
+		jz .done
 		inc cx
 	jmp .loop
 
-	.do_write:
+	.done:
+	mov ax, cx
 	pop di
-	call fPutArr
-	pop ax
 	pop cx
 	ret
 

@@ -30,6 +30,8 @@ MOV;10100001;procHandleMovMemAX
 MOV;10100010;procHandleMovMemAX
 MOV;10100011;procHandleMovMemAX
 
+MOV;10001110;procHandleMovSegReg
+MOV;10001100;procHandleMovSegReg
 
 ADD;00000000;procHandleRegMem
 ADD;00000001;procHandleRegMem

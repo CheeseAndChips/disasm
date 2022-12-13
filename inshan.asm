@@ -32,6 +32,12 @@ section .data
         _SI: db "SI"
         _DI: db "DI"
 
+    segregisters:
+        _ES: db "ES"
+        _CS: db "CS"
+        _SS: db "SS"
+        _DS: db "DS"
+
     _BX_SI_DISP: db "BX+SI+", 0
     _BX_DI_DISP: db "BX+DI+", 0
     _BP_SI_DISP: db "BP+SI+", 0
@@ -170,6 +176,36 @@ section .text
 
         ret
 
+    procHandleMovSegReg:
+        mov bx, word [bx+2]
+        
+        mov ah, al
+        call readByte
+
+        mov di, cx
+        call procDecodeModRM
+        macPushZero
+
+        push ax
+        push bx
+        mov di, dx
+        shr al, 2
+        and al, 0x6
+        xor ah, ah
+        add ax, segregisters
+        mov bx, ax
+        mov ax, word [bx]
+        mov word [di], ax
+        add di, 2
+        macPushZero
+        pop bx
+        pop ax
+
+        test ah, 2
+        jz .skip_swap
+        xchg cx, dx
+        .skip_swap:
+        ret       
 
     procHandleDispJump:
         mov bx, word [bx+2]

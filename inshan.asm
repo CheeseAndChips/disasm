@@ -113,6 +113,30 @@ section .text
         xor dx, dx
         ret
         
+    procHandleMul:
+        mov ah, al
+        call readByte
+
+        mov di, cx
+        call procDecodeModRM
+        macPushZero
+
+        push ax
+            and al, 00111000b
+
+            macModEntry 011b, _NEG
+            macModEntry 100b, _MUL
+            macModEntry 101b, _IMUL
+            macModEntry 110b, _DIV
+            macModEntry 111b, _IDIV
+            macModEntry 010b, _NOT
+
+            stc
+        .label_assigned:
+        xor dx, dx
+        pop ax
+        ret
+
     
     procHandleImmAcc:
         mov bx, word [bx+2]

@@ -4,6 +4,8 @@ instr = [None for _ in range(256)]
 labels = []
 
 with open('instr.txt', 'r') as f:
+	additional = f.readline().rstrip()
+	labels = list(additional.split(';'))
 	for i, line in enumerate(f):
 		line = line.rstrip()
 		if not line:

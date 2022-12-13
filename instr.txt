@@ -1,3 +1,5 @@
+NEG;MUL;IMUL;DIV;IDIV;NOT
+
 MOV;11000110;procHandleMove
 MOV;11000111;procHandleMove
 
@@ -107,6 +109,9 @@ LOOPW;11100010;procHandleDispJump
 LOOPZW;11100001;procHandleDispJump
 LOOPNZW;11100000;procHandleDispJump
 JCXZ;11100011;procHandleDispJump
+
+;11110110;procHandleMul
+;11110111;procHandleMul
 
 RET;11000011;procHandleSingleByte
 AAS;00111111;procHandleSingleByte

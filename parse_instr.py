@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 instr = [None for _ in range(256)]
-labels = set()
+labels = []
 
 with open('instr.txt', 'r') as f:
 	for i, line in enumerate(f):
@@ -15,7 +15,8 @@ with open('instr.txt', 'r') as f:
 		if not label:
 			label = None
 
-		labels.add(label)
+		if label not in labels:
+			labels.append(label)
 		if instr[opcode] != None:
 			print(f'Duplicate on line {line}')
 			exit(1)

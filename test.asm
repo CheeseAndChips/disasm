@@ -1,14 +1,31 @@
 org 100h
 
 section .text
-	ADD		bx, 0x213
-	ADC		bx, 0x213
-	SUB		bx, 0x213
-	SBB		bx, 0x213
-	CMP		bx, 0x213
-	XOR		bx, 0x213
-	AND		bx, 0x213
-	OR		bx, 0x213
+start:
+	jmp .l
+	.l:
+	je .l
+	jl .l
+	jle .l
+	jb .l
+	jbe .l
+	jp .l
+	JO .l
+	JS .l
+	.l2:
+	jne .l2
+	jnl .l2
+	jnle .l2
+	jnb .l2
+	jnbe .l2
+	jnp .l2
+	JNO .l2
+	.l3:
+	JNS .l2
+	loop .l2
+	LOOPZ .l3
+	LOOPNZ .l3
+	jcxz .l3
 
 
 	ADC     BP,[BX+DI+0x5678]

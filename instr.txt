@@ -86,6 +86,27 @@ XOR;00110011;procHandleRegMem
 XOR;00110100;procHandleImmAcc
 XOR;00110101;procHandleImmAcc
 
+JMP;11101011;procHandleDispJump
+JZ;01110100;procHandleDispJump
+JL;01111100;procHandleDispJump
+JLE;01111110;procHandleDispJump
+JB;01110010;procHandleDispJump
+JBE;01110110;procHandleDispJump
+JPE;01111010;procHandleDispJump
+JO;01110000;procHandleDispJump
+JS;01111000;procHandleDispJump
+JNZ;01110101;procHandleDispJump
+JGE;01111101;procHandleDispJump
+JG;01111111;procHandleDispJump
+JAE;01110011;procHandleDispJump
+JA;01110111;procHandleDispJump
+JPO;01111011;procHandleDispJump
+JNO;01110001;procHandleDispJump
+JNS;01111001;procHandleDispJump
+LOOPW;11100010;procHandleDispJump
+LOOPZW;11100001;procHandleDispJump
+LOOPNZW;11100000;procHandleDispJump
+JCXZ;11100011;procHandleDispJump
 
 RET;11000011;procHandleSingleByte
 AAS;00111111;procHandleSingleByte

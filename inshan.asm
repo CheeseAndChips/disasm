@@ -89,6 +89,30 @@ section .text
         .finished:
         ret
 
+    procHandleDispJump:
+        mov bx, word [bx+2]
+
+        int 0x03
+
+        mov ah, al
+        call readByte
+        cbw
+
+        add ax, word [currentbyte]
+
+        push bx
+        xor bx, bx
+        mov bl, byte [readcnt]
+        add ax, bx
+        pop bx
+
+        mov di, cx
+        call writeW
+        macPushZero
+
+        xor dx, dx
+        ret
+        
     
     procHandleImmAcc:
         mov bx, word [bx+2]

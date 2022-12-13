@@ -80,7 +80,8 @@ section .text
 		mov al, byte [readcnt]
 		add word [currentbyte], ax
 		pop cx
-	loop .loop
+	jmp .loop
+	; loop .loop
 
 	call exitProgram
 	write_failure:

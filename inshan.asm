@@ -51,6 +51,8 @@ section .data
         dw _DI_DISP
         dw _BP_DISP
         dw _BX_DISP
+
+    _FAR: db "FAR ", 0
         
 
 
@@ -99,12 +101,7 @@ section .text
         cbw
 
         add ax, word [currentbyte]
-
-        push bx
-        xor bx, bx
-        mov bl, byte [readcnt]
-        add ax, bx
-        pop bx
+        call addBytesRead
 
         mov di, cx
         call writeW
@@ -137,6 +134,55 @@ section .text
         pop ax
         ret
 
+    procHandleDirect:
+        mov bx, word [bx+2]
+        mov di, cx
+        call readDataW
+
+        add ax, word [currentbyte]
+        call addBytesRead
+
+        call writeW
+        macPushZero
+        xor dx, dx
+        ret
+
+    procHandleIndirect:
+        mov bx, word [bx+2]
+        mov ah, al
+        call readByte
+
+        mov di, cx
+
+        test al, 0x08
+        jz .skip_far_write
+        mov si, _FAR
+        call pushArr
+        .skip_far_write:
+
+        call procDecodeModRM
+
+        macPushZero
+
+        xor dx, dx
+        ret
+
+
+
+    procHandleIntersegment:
+        mov bx, word [bx+2]
+        mov di, cx
+        call readDataW
+        push ax
+        call readDataW
+        call writeW
+        mov dl, ':'
+        call pushC
+        pop ax
+        call writeW
+        macPushZero
+        xor dx, dx
+        ret
     
     procHandleImmAcc:
         mov bx, word [bx+2]

@@ -113,5 +113,12 @@ JCXZ;11100011;procHandleDispJump
 ;11110110;procHandleMul
 ;11110111;procHandleMul
 
+CALL;11101000;procHandleDirect
+CALL;10011010;procHandleIntersegment
+CALL;11111111;procHandleIndirect
+
+JMP;11101001;procHandleDirect
+JMP;11101010;procHandleIntersegment
+
 RET;11000011;procHandleSingleByte
 AAS;00111111;procHandleSingleByte

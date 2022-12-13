@@ -89,6 +89,14 @@ section .text
 	call exitProgram
 
 
+addBytesRead:
+	push bx
+	xor bx, bx
+	mov bl, byte [readcnt]
+	add ax, bx
+	pop bx
+	ret
+
 procDecodeByte:
 	call readByte
 	push ax

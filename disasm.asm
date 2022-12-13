@@ -105,15 +105,7 @@ procDecodeByte:
 	mov dx, word [bx]
 	test dx, dx
 	pop dx
-	jnz .decode
-		; opcode not found, write DB {hex}
-		mov cx, LEFT_OPERAND
-		mov di, cx
-		call writeB
-		macPushZero
-		xor dx, dx
-		mov bx, _DB
-		jmp .write_result
+	jz .parse_failure
 
 	; in:
 	; al - opcode
@@ -128,16 +120,22 @@ procDecodeByte:
 	mov dx, RIGHT_OPERAND
 	clc
 	call [bx]
-
-	; unable to parse
-
 	jnc .write_result
+
+	.parse_failure:
+	mov cx, LEFT_OPERAND
+	xor dx, dx
+	mov di, cx
+	mov al, byte [BYTESREAD]
+	call writeB
+	macPushZero
+	mov bx, _DB
+	jmp .write_result
 	
 	.write_result:
 	call writeResult
 
 	ret
-
 writeCSIP:
 	mov ax, 0x0734
 	call fWriteW

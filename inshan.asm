@@ -430,8 +430,7 @@ section .text
             macModEntry 100b, _AND
             macModEntry 001b, _OR
             macModEntry 110b, _XOR
-
-            stc
+            
             ret
 
             .label_assigned:

@@ -71,7 +71,7 @@ section .text
 
 	mov word [currentbyte], 0x100
 
-	mov cx, 89
+	mov cx, 10
 	.loop:
 		push cx
 		mov byte [readcnt], 0
@@ -122,8 +122,6 @@ procDecodeByte:
 	macWriteStr "Failed reading byte", crlf
 	macExitProgram
 	.no_failure:
-
-	int 0x03
 
 	push bx
 	push cx

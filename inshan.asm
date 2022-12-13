@@ -85,17 +85,14 @@ section .text
         mov bx, word [bx+2]
 
         push ax
-        and al, 0xfe
 
-        cmp al, 0x04
-        jz .handle_imm_acc
+        test al, 0x04
+        jnz .handle_imm_acc
 
-        and al, 0xfc
-        cmp al, 0x00
-        jz .handle_reg_mem
+        test al, 0x80
+        jnz .handle_imm_reg_mem
 
-        cmp al, 0x80
-        jz .handle_imm_reg_mem
+        jmp .handle_reg_mem
 
         stc
         pop ax
@@ -145,6 +142,7 @@ section .text
                 call pushC
                 mov dl, dh
                 call pushC
+                macPushZero
                 mov di, dx
                 call readDataW
                 call writeW
@@ -157,6 +155,7 @@ section .text
                 mov dl, dh
                 call pushC
                 mov di, dx
+                macPushZero
                 call readDataB
                 call writeB
                 macPushZero

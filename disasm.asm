@@ -2,34 +2,43 @@
 
 org 100h
 
-section .data
-	show_help_arg: db "/?", 0x0d
-	infd: dw 0
-	outfd: dw 0
-	outbuffaddr: dw 0
-	outbuffused: dw 0
-	currentbyte: dw 0
-	readcnt: db 0
-	readnow: times 16 db 0
-
-	crlf_: db crlf, 0
-
 %define BUFFER_SIZE 255
 %define OPERAND_SIZE 32
 
+section .bss
+	INFD: resb 2
+	OUTFD: resb 2
+	OUTBUFFER: resb BUFFER_SIZE
+	BYTESREAD: resb 16
+	LEFT_OPERAND: resb OPERAND_SIZE
+	RIGHT_OPERAND: resb OPERAND_SIZE
+	READCNT: resb 2
+	LINE_BUFFER: resb 32
+
+section .data
+	OUTBUFFERUSED: dw 0
+	CURRENTBYTE: dw 0x100
+
+	show_help_arg: db "/?", 0x0d
+	crlf_: db crlf, 0
+
 section .text
-	%assign BP_OFFSET 0
-	macReserveVar OUTBUFFER, BUFFER_SIZE
-	macReserveVar LEFT_OPERAND, OPERAND_SIZE
-	macReserveVar RIGHT_OPERAND, OPERAND_SIZE
-	macReserveVar LINE_BUFFER, 32
+start:
+	call openFiles
 
-	sub sp, BP_OFFSET
-	mov bp, sp
+	.loop:
+		mov word [READCNT], 0
+		call procDecodeByte
+		mov ax, word [READCNT]
+		add word [CURRENTBYTE], ax
+	jmp .loop
 
-	lea ax, [OUTBUFFER]
-	mov word [outbuffaddr], ax
+	call exitProgram
+	write_failure:
+	macWriteStr "Failed decoding byte", crlf
+	call exitProgram
 
+openFiles:
 	; check if arguments are /?
 	mov cx, 3
 	mov si, 0x82
@@ -47,7 +56,7 @@ section .text
 	test cx, cx
 	jz showHelp
 
-	mov [outfd], di ; save location of second file path
+	mov [OUTFD], di ; save location of second file path
 	mov byte [di-1], 0 ; make asciiz string
 	
 	; try finding next space
@@ -61,38 +70,18 @@ section .text
 	mov dx, 0x82
 	int 0x21
 	jc showFileOpenError
-	mov [infd], ax
+	mov [INFD], ax
 
 	mov ax, 0x3c00
-	mov dx, [outfd]
+	mov dx, [OUTFD]
 	int 0x21
 	jc showFileOpenError
-	mov [outfd], ax
-
-	mov word [currentbyte], 0x100
-
-	mov cx, 10
-	.loop:
-		push cx
-		mov byte [readcnt], 0
-		call procDecodeByte
-		xor ax, ax
-		mov al, byte [readcnt]
-		add word [currentbyte], ax
-		pop cx
-	jmp .loop
-	; loop .loop
-
-	call exitProgram
-	write_failure:
-	macWriteStr "Failed decoding byte", crlf
-	call exitProgram
-
+	mov [OUTFD], ax
+	ret
 
 addBytesRead:
 	push bx
-	xor bx, bx
-	mov bl, byte [readcnt]
+	mov bx, word [READCNT]
 	add ax, bx
 	pop bx
 	ret
@@ -110,9 +99,6 @@ procDecodeByte:
 	test dx, dx
 	jz write_failure		
 	pop dx
-
-	; mov ax, [currentbyte]
-	; call writeW
 
 	; in:
 	; al - opcode
@@ -143,15 +129,14 @@ procDecodeByte:
 	mov dl, ':'
 	call pushC
 
-	mov ax, [currentbyte]
+	mov ax, [CURRENTBYTE]
 	call writeW
 
 	mov dl, ' '
 	call pushC
 
-	mov si, readnow
-	xor cx, cx
-	mov cl, byte [readcnt]
+	mov si, BYTESREAD
+	mov cx, word [READCNT]
 	.byteloop:
 		mov al, byte [si]
 		inc si
@@ -175,9 +160,8 @@ procDecodeByte:
 	push cx
 	push dx
 		mov cx, 18
-		xor dx, dx
-		mov dl, byte [readcnt]
-		shl dl, 1
+		mov dx, word [READCNT]
+		shl dx, 1
 		sub cx, dx
 		mov al, ' '
 		.spaceloop:
@@ -254,7 +238,7 @@ readByte:
 	
 	pasbuff:
 	mov ah, 0x3f
-	mov bx, [infd]
+	mov bx, [INFD]
 	mov cx, 1
 	mov dx, buff
 	int 21h
@@ -269,10 +253,9 @@ readByte:
 	pop ax
 	mov al, byte [buff]
 
-	xor bx, bx
-	mov bl, byte [readcnt]
-	mov [bx+readnow], al
-	inc byte [readcnt]
+	mov bx, word [READCNT]
+	mov [bx+BYTESREAD], al
+	inc word [READCNT]
 
 	.skip_write:
 	pop dx
@@ -285,9 +268,8 @@ fillBuffer:
 writeParsedBytes:
 	push cx
 	push di
-	xor cx, cx
-	mov cl, byte [readcnt]
-	mov di, readnow
+	mov cx, word [READCNT]
+	mov di, BYTESREAD
 	.loop:
 		mov al, byte [di]
 		call writeB
@@ -304,12 +286,11 @@ flushBuffer:
 	push dx
 	
 	mov ah, 0x40
-	mov bx, word [outfd]
-	xor cx, cx
-	mov cl, byte [outbuffused]
-	mov dx, word [outbuffaddr]
+	mov bx, word [OUTFD]
+	mov cx, word [OUTBUFFERUSED]
+	mov dx, word OUTBUFFER
 	int 0x21
-	mov byte [outbuffused], 0
+	mov word [OUTBUFFERUSED], 0
 
 	pop dx
 	pop cx
@@ -322,9 +303,8 @@ fPutC:
 	push di
 	push bx
 
-	mov di, word [outbuffaddr]
-	xor bx, bx
-	mov bl, byte [outbuffused]
+	mov di, word OUTBUFFER
+	mov bx, word [OUTBUFFERUSED]
 	
 	cmp bl, BUFFER_SIZE
 	jnz .skip_writing
@@ -332,7 +312,7 @@ fPutC:
 		xor bx, bx
 	.skip_writing:
 	mov byte [di+bx], al
-	inc byte [outbuffused]
+	inc word [OUTBUFFERUSED]
 
 	pop bx
 	pop di

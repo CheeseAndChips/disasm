@@ -272,7 +272,7 @@ section .text
         call readByte
         cbw
 
-        add ax, word [currentbyte]
+        add ax, word [CURRENTBYTE]
         call addBytesRead
 
         mov di, cx
@@ -323,7 +323,7 @@ section .text
         mov di, cx
         call readDataW
 
-        add ax, word [currentbyte]
+        add ax, word [CURRENTBYTE]
         call addBytesRead
 
         call writeW

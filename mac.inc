@@ -83,6 +83,15 @@ section .text
     %%skip:
 %endmacro
 
+%macro macModEntryCall 3
+	cmp al, (%1 << 3)
+	jnz %%skip
+	mov bx, %2
+	mov di, %3
+	jmp .label_assigned
+	%%skip:
+%endmacro
+
 %macro macReadByteWithCheck 0
     call readByte
     jnc %%no_failure

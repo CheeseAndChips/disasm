@@ -294,21 +294,39 @@ section .text
         macReturnOneArg
 
     procHandleIndirect:
-        macReadSecondByte
-
         mov di, cx
-
-        test al, 0x08
-        jz ._near
-            mov si, _FAR
-            call pushArr
-            call procDecodeModRM
-            jmp .done
-        ._near:
-            call procDecodeModRMPtr
-        .done:
+        call procDecodeModRMPtr
         macPushZero
         macReturnOneArg
+
+    procHandleIndirectIntersegment:
+        mov di, cx
+        mov si, _FAR
+        call pushArr
+        call procDecodeModRM
+        macPushZero
+        macReturnOneArg
+
+    procHandleFF:
+        db 0xcc
+        macReadSecondByte
+
+        push ax
+            and al, 00111000b
+        
+            macModEntryCall 100b, _JMP, procHandleIndirect
+            macModEntryCall 101b, _JMP, procHandleIndirectIntersegment
+            macModEntryCall 010b, _CALL, procHandleIndirect
+            macModEntryCall 011b, _CALL, procHandleIndirectIntersegment
+            ; macModEntryCall 100b, _JMP, procHandleIndirect
+
+            pop ax
+            stc
+            ret
+        .label_assigned:
+        pop ax
+        call di
+        ret
 
 
     procHandleIntersegment:
@@ -441,8 +459,6 @@ section .text
     ; ax - instructions
     ; di - output    
     procDecodeModRM:
-        db 0xcc
-
         push bp
         sub sp, 2
         mov bp, sp

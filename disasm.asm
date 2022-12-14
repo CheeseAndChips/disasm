@@ -100,10 +100,9 @@ procDecodeByte:
 	add bx, ax
 	pop ax
 
-	push dx
-	mov dx, word [bx]
-	test dx, dx
-	pop dx
+	mov di, word [bx]
+	test di, di
+	mov bx, word [bx+2]
 	jz .parse_failure
 
 	; in:
@@ -118,7 +117,7 @@ procDecodeByte:
 	mov cx, LEFT_OPERAND
 	mov dx, RIGHT_OPERAND
 	clc
-	call [bx]
+	call di
 	jnc .write_result
 
 	.parse_failure:

@@ -52,8 +52,6 @@ section .data
 
 section .text
     procHandleMovImmRM:
-        mov bx, word [bx+2]
-
         macReadSecondByte
 
         mov di, cx
@@ -76,8 +74,6 @@ section .text
         ret
 
     procHandleMovImmReg:
-        mov bx, word [bx+2]
-
         mov di, cx
         call decodeRegister
         macPushZero
@@ -98,8 +94,6 @@ section .text
         ret
 
     procHandleMovMemAX:
-        mov bx, word [bx+2]
-
         test al, 0x01
         mov di, cx
         jnz .dataW
@@ -136,8 +130,7 @@ section .text
         ret
 
     procHandleMovSegReg:
-        mov bx, word [bx+2]
-        
+       
         macReadSecondByte
 
         mov di, cx
@@ -207,8 +200,6 @@ section .text
         ret
 
     procHandleTestRMReg:
-        mov bx, word [bx+2]
-
         macReadSecondByte
         
         mov di, cx
@@ -247,8 +238,6 @@ section .text
         ret
 
     procHandleDispJump:
-        mov bx, word [bx+2]
-
         macReadSecondByte
         cbw
 
@@ -297,7 +286,6 @@ section .text
         ret
 
     procHandleDirect:
-        mov bx, word [bx+2]
         mov di, cx
         call readDataW
 
@@ -310,7 +298,6 @@ section .text
         ret
 
     procHandleIndirect:
-        mov bx, word [bx+2]
         macReadSecondByte
 
         mov di, cx
@@ -331,7 +318,6 @@ section .text
 
 
     procHandleIntersegment:
-        mov bx, word [bx+2]
         mov di, cx
         call readDataW
         push ax
@@ -346,8 +332,6 @@ section .text
         ret
 
     procHandleRetAdd:
-        mov bx, word [bx+2]
-
         mov di, cx
         call readDataW
         call writeW
@@ -357,8 +341,6 @@ section .text
         ret
 
     procHandleInt:
-        mov bx, word [bx+2]
-        
         mov di, cx
         call readDataB
         call writeB
@@ -368,8 +350,7 @@ section .text
         ret
 
     procHandleInt3:
-        mov bx, word [bx+2]
-        
+       
         mov di, cx
         mov al, 0x03
         call writeB
@@ -379,8 +360,6 @@ section .text
         ret
     
     procHandleImmAcc:
-        mov bx, word [bx+2]
-
         test al, 1
         jz .handle_al
             mov dx, word [_AX]
@@ -434,8 +413,6 @@ section .text
         ret
 
     procHandleRegMem:
-        mov bx, word [bx+2]
-
         macReadSecondByte
         push ax
 
@@ -607,7 +584,6 @@ section .text
     procHandleSingleByte:
         xor cx, cx
         xor dx, dx
-        mov bx, word [bx+2]
         ret
 
     decodeRegister:

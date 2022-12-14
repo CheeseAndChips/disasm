@@ -2,6 +2,11 @@ org 100h
 
 section .text
 start:
+	AAS
+	LAHF
+	SAHF
+	PUSHF
+	POPF
 	jmp .l
 	.l:
 	je .l

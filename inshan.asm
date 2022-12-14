@@ -55,7 +55,7 @@ section .text
         macReadSecondByte
 
         mov di, cx
-        call procDecodeModRM
+        call procDecodeModRMPtr
         macPushZero
 
         mov di, dx
@@ -130,11 +130,11 @@ section .text
         macReturnTwoArg
 
     procHandleMovSegReg:
-       
         macReadSecondByte
 
         mov di, cx
-        call procDecodeModRM
+        or ah, 1
+        call procDecodeModRMPtr
         macPushZero
 
         push ax
@@ -162,7 +162,7 @@ section .text
         macReadSecondByte
 
         mov di, cx
-        call procDecodeModRM
+        call procDecodeModRMPtr
         macPushZero
 
         mov di, dx
@@ -219,7 +219,7 @@ section .text
 
     procHandleTestImmRM:
         mov di, cx
-        call procDecodeModRM
+        call procDecodeModRMPtr
         macPushZero
 
         mov di, dx
@@ -277,7 +277,7 @@ section .text
         pop ax
 
         mov di, cx
-        call procDecodeModRM
+        call procDecodeModRMPtr
         macPushZero
 
         macReturnOneArg
@@ -299,12 +299,14 @@ section .text
         mov di, cx
 
         test al, 0x08
-        jz .skip_far_write
-        mov si, _FAR
-        call pushArr
-        .skip_far_write:
-
-        call procDecodeModRM
+        jz ._near
+            mov si, _FAR
+            call pushArr
+            call procDecodeModRM
+            jmp .done
+        ._near:
+            call procDecodeModRMPtr
+        .done:
         macPushZero
         macReturnOneArg
 
@@ -338,8 +340,8 @@ section .text
 
     procHandleInt3:
         mov di, cx
-        mov al, 0x03
-        call writeB
+        mov dl, '3'
+        call pushC
         macPushZero
         macReturnOneArg
     
@@ -384,7 +386,7 @@ section .text
         pop ax
 
         mov di, cx
-        call procDecodeModRM
+        call procDecodeModRMPtr
         mov di, dx
         call procGetData
         macReturnTwoArg
@@ -411,17 +413,15 @@ section .text
         .finished:
         macReturnTwoArg
 
-    ; ax - instructions
-    ; di - output
-    procDecodeModRM:
-        push bp
-        sub sp, 2
-        mov bp, sp
-        mov word [bp], ax
+    procHandleSingleByte:
+        macReturnNoArg
 
+    procDecodeModRMPtr:
+        push ax
         and al, 0xc0
         cmp al, 0xc0
-        jz .mod_11
+        pop ax
+        je .start_decode ; mod 11 => register
 
         push si
         test ah, 1
@@ -433,6 +433,25 @@ section .text
         .writeptr:
         call pushArr
         pop si
+
+        .start_decode:
+        call procDecodeModRM
+        ret
+
+    ; ax - instructions
+    ; di - output    
+    procDecodeModRM:
+        db 0xcc
+
+        push bp
+        sub sp, 2
+        mov bp, sp
+        mov word [bp], ax
+
+        and al, 0xc0
+        cmp al, 0xc0
+        mov ax, word [bp]
+        je .mod_11
 
         push dx
         mov dl, '['
@@ -543,13 +562,16 @@ section .text
         .datasb:
             call readDataB
             cmp al, 0x80
-            jnz .no_negative
-            neg al
             push dx
-            mov dl, '-'
+            jnz .no_negative
+                neg al
+                mov dl, '-'
+                jmp .write
+            .no_negative:
+                mov dl, '+'
+            .write:
             call pushC
             pop dx
-            .no_negative:
             call writeB
             jmp .post_data
         
@@ -558,8 +580,7 @@ section .text
         pop ax
         ret
 
-    procHandleSingleByte:
-        macReturnNoArg
+    
 
     decodeRegister:
         push ax

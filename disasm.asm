@@ -29,19 +29,15 @@ section .text
 start:
 	call openFiles
 
-	mov cx, 5
 	.loop:
-		push cx
 		mov word [READCNT], 0
 		call procDecodeByte
+		jc .exit
 		mov ax, word [READCNT]
 		add word [CURRENTBYTE], ax
-		pop cx
-	loop .loop
+	jmp .loop
 
-	call exitProgram
-	write_failure:
-	macWriteStr "Failed decoding byte", crlf
+	.exit:
 	call exitProgram
 
 openFiles:
@@ -93,10 +89,10 @@ addBytesRead:
 	ret
 
 procDecodeByte:
-	call writeCSIP
-
 	; read instruction and find procedure for decoding
-	call readByte
+	macReadByteWithCheck
+
+	call writeCSIP
 	push ax
 	xor ah, ah
 	mov bx, instrDecodeTable
@@ -138,9 +134,11 @@ procDecodeByte:
 	.write_result:
 
 	call writeResult
-
+	
+	clc
 	ret
 writeCSIP:
+	push ax
 	mov ax, 0x0734
 	call fWriteW
 
@@ -152,12 +150,11 @@ writeCSIP:
 
 	mov al, ' '
 	call fPutC
+	pop ax
 
 	ret
 
 writeResult:
-	int 0x03
-
 	; 1. write decoded bytes
 	mov word [LINE_COUNTER], 0
 	mov di, BYTESREAD
@@ -242,13 +239,11 @@ showFileOpenError:
 
 
 readByte:
-	int 0x03
 	push bx
 	push cx
 
 	mov bx, word [INPUT_USED]
 	mov cx, word [INPUT_FILLED]
-
 	cmp bx, cx
 	jne .return_byte
 		push ax
@@ -276,11 +271,11 @@ readByte:
 	mov bx, word [READCNT]
 	mov byte [BYTESREAD+bx], al
 	inc word [READCNT]
+	clc
 
 	.return:
 	pop cx
 	pop bx
-	int 0x03
 	ret
 
 flushBuffer:

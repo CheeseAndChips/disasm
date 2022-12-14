@@ -54,8 +54,7 @@ section .text
     procHandleMovImmRM:
         mov bx, word [bx+2]
 
-        mov ah, al
-        call readByte
+        macReadSecondByte
 
         mov di, cx
         call procDecodeModRM
@@ -139,8 +138,7 @@ section .text
     procHandleMovSegReg:
         mov bx, word [bx+2]
         
-        mov ah, al
-        call readByte
+        macReadSecondByte
 
         mov di, cx
         call procDecodeModRM
@@ -168,8 +166,7 @@ section .text
         ret
 
     procHandleLogic:
-        mov ah, al
-        call readByte
+        macReadSecondByte
 
         mov di, cx
         call procDecodeModRM
@@ -212,8 +209,7 @@ section .text
     procHandleTestRMReg:
         mov bx, word [bx+2]
 
-        mov ah, al
-        call readByte
+        macReadSecondByte
         
         mov di, cx
         call procDecodeModRM
@@ -253,8 +249,7 @@ section .text
     procHandleDispJump:
         mov bx, word [bx+2]
 
-        mov ah, al
-        call readByte
+        macReadSecondByte
         cbw
 
         add ax, word [CURRENTBYTE]
@@ -268,9 +263,7 @@ section .text
         ret
         
     procHandleMul:
-        mov ah, al
-        call readByte
-
+        macReadSecondByte
         push ax
             and al, 00111000b
 
@@ -318,8 +311,7 @@ section .text
 
     procHandleIndirect:
         mov bx, word [bx+2]
-        mov ah, al
-        call readByte
+        macReadSecondByte
 
         mov di, cx
 
@@ -416,8 +408,7 @@ section .text
             ret
 
     procHandleImmRegMem:
-        mov ah, al
-        call readByte
+        macReadSecondByte
         
         push ax
             and al, 00111000b
@@ -445,8 +436,7 @@ section .text
     procHandleRegMem:
         mov bx, word [bx+2]
 
-        mov ah, al
-        call readByte
+        macReadSecondByte
         push ax
 
         mov di, cx
@@ -655,14 +645,14 @@ section .text
         ret
 
     readDataB:
-        call readByte
+        macReadByteWithCheck
         ret
 
     readDataW:
         push bx
-        call readByte
+        macReadByteWithCheck
         mov bl, al
-        call readByte
+        macReadByteWithCheck
         mov bh, al
         mov ax, bx
         pop bx

@@ -64,3 +64,15 @@ section .text
     jmp .label_assigned
     %%skip:
 %endmacro
+
+%macro macReadByteWithCheck 0
+    call readByte
+    jnc %%no_failure
+    ret
+    %%no_failure:
+%endmacro
+
+%macro macReadSecondByte 0
+    mov ah, al
+    macReadByteWithCheck
+%endmacro

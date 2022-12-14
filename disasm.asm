@@ -417,6 +417,11 @@ pushC:
 	inc di
 	ret
 
+pushZero:
+	mov byte [di], 0
+	inc di
+	ret
+
 pushArr:
 	push dx
 	cmp byte [si], 0

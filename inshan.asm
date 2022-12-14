@@ -71,7 +71,7 @@ section .text
         .done:
         macPushZero
 
-        ret
+        macReturnTwoArg
 
     procHandleMovImmReg:
         mov di, cx
@@ -90,8 +90,8 @@ section .text
 
         .done:
         macPushZero
-
-        ret
+        
+        macReturnTwoArg
 
     procHandleMovMemAX:
         test al, 0x01
@@ -127,7 +127,7 @@ section .text
         xchg cx, dx
         .skip_swap:
 
-        ret
+        macReturnTwoArg
 
     procHandleMovSegReg:
        
@@ -156,7 +156,7 @@ section .text
         jz .skip_swap
         xchg cx, dx
         .skip_swap:
-        ret
+        macReturnTwoArg
 
     procHandleLogic:
         macReadSecondByte
@@ -197,7 +197,7 @@ section .text
             
         .label_assigned:
         pop ax
-        ret
+        macReturnTwoArg
 
     procHandleTestRMReg:
         macReadSecondByte
@@ -215,7 +215,7 @@ section .text
         call decodeRegister
         macPushZero
 
-        ret
+        macReturnTwoArg
 
     procHandleTestImmRM:
         mov di, cx
@@ -235,7 +235,7 @@ section .text
         .done:
         macPushZero
 
-        ret
+        macReturnTwoArg
 
     procHandleDispJump:
         macReadSecondByte
@@ -248,8 +248,7 @@ section .text
         call writeW
         macPushZero
 
-        xor dx, dx
-        ret
+        macReturnOneArg
         
     procHandleMul:
         macReadSecondByte
@@ -271,9 +270,8 @@ section .text
             macModEntry 111b, _IDIV
             macModEntry 010b, _NOT
             
-            stc
-            xor dx, dx
             pop ax
+            stc
             ret
         .label_assigned:
         pop ax
@@ -282,8 +280,7 @@ section .text
         call procDecodeModRM
         macPushZero
 
-        xor dx, dx
-        ret
+        macReturnOneArg
 
     procHandleDirect:
         mov di, cx
@@ -294,8 +291,7 @@ section .text
 
         call writeW
         macPushZero
-        xor dx, dx
-        ret
+        macReturnOneArg
 
     procHandleIndirect:
         macReadSecondByte
@@ -309,12 +305,8 @@ section .text
         .skip_far_write:
 
         call procDecodeModRM
-
         macPushZero
-
-        xor dx, dx
-        ret
-
+        macReturnOneArg
 
 
     procHandleIntersegment:
@@ -328,63 +320,51 @@ section .text
         pop ax
         call writeW
         macPushZero
-        xor dx, dx
-        ret
+        macReturnOneArg
 
     procHandleRetAdd:
         mov di, cx
         call readDataW
         call writeW
         macPushZero
-
-        xor dx, dx
-        ret
+        macReturnOneArg
 
     procHandleInt:
         mov di, cx
         call readDataB
         call writeB
         macPushZero
-
-        xor dx, dx
-        ret
+        macReturnOneArg
 
     procHandleInt3:
-       
         mov di, cx
         mov al, 0x03
         call writeB
         macPushZero
-
-        xor dx, dx
-        ret
+        macReturnOneArg
     
     procHandleImmAcc:
+        mov di, dx
+        push dx
         test al, 1
         jz .handle_al
             mov dx, word [_AX]
-            mov di, cx
-            call pushC
-            mov dl, dh
-            call pushC
-            macPushZero
-            mov di, dx
             call readDataW
             call writeW
-            macPushZero
-            ret
+            jmp .postif
         .handle_al:
             mov dx, word [_AL]
-            mov di, cx
-            call pushC
-            mov dl, dh
-            call pushC
-            macPushZero
-            mov di, dx
             call readDataB
             call writeB
-            macPushZero
-            ret
+        .postif:
+        macPushZero
+        mov di, cx
+        call pushC
+        mov dl, dh
+        call pushC
+        macPushZero
+        pop dx
+        macReturnTwoArg
 
     procHandleImmRegMem:
         macReadSecondByte
@@ -400,9 +380,6 @@ section .text
             macModEntry 100b, _AND
             macModEntry 001b, _OR
             macModEntry 110b, _XOR
-            
-            ret
-
             .label_assigned:
         pop ax
 
@@ -410,7 +387,7 @@ section .text
         call procDecodeModRM
         mov di, dx
         call procGetData
-        ret
+        macReturnTwoArg
 
     procHandleRegMem:
         macReadSecondByte
@@ -432,7 +409,7 @@ section .text
         jz .finished
         xchg cx, dx
         .finished:
-        ret
+        macReturnTwoArg
 
     ; ax - instructions
     ; di - output
@@ -582,9 +559,7 @@ section .text
         ret
 
     procHandleSingleByte:
-        xor cx, cx
-        xor dx, dx
-        ret
+        macReturnNoArg
 
     decodeRegister:
         push ax

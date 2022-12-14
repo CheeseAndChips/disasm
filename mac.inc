@@ -1,3 +1,6 @@
+%ifndef _MAC_INC
+%define _MAC_INC
+
 %define crlf 0x0d, 0x0a
 
 %macro macWriteStr 1+
@@ -51,10 +54,25 @@ section .text
 %endmacro
 
 %macro macPushZero 0
-    push dx
-    mov dl, 0
-    call pushC
-    pop dx
+    call pushZero
+%endmacro
+
+%macro macReturnNoArg 0
+	xor cx, cx
+	xor dx, dx
+	clc
+	ret
+%endmacro
+
+%macro macReturnOneArg 0
+	xor dx, dx
+	clc
+	ret
+%endmacro
+
+%macro macReturnTwoArg 0
+	clc
+	ret
 %endmacro
 
 %macro macModEntry 2
@@ -76,3 +94,5 @@ section .text
     mov ah, al
     macReadByteWithCheck
 %endmacro
+
+%endif

@@ -595,14 +595,12 @@ section .text
         call pushC
         pop dx
 
-        cmp al, 0x00
-        jne .decode_rm
+        test al, 0xc0
+        jnz .decode_rm
         mov ax, [bp]
         and al, 0x7
         cmp al, 0x6
-        jne .decode_rm
-
-        jmp .skip_rm
+        je .skip_rm
 
         .decode_rm:
         mov ax, [bp]

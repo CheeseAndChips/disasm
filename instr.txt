@@ -225,7 +225,7 @@ POP;01011111;procHandleRegInstr
 XCHG;10000110;procHandleRegMem
 XCHG;10000111;procHandleRegMem
 
-XCHG;10010000;procHandleRegAcc
+NOP;10010000;procHandleSingleByte
 XCHG;10010001;procHandleRegAcc
 XCHG;10010010;procHandleRegAcc
 XCHG;10010011;procHandleRegAcc
@@ -233,3 +233,13 @@ XCHG;10010100;procHandleRegAcc
 XCHG;10010101;procHandleRegAcc
 XCHG;10010110;procHandleRegAcc
 XCHG;10010111;procHandleRegAcc
+
+IN;11100100;procHandleIOFixed
+IN;11100101;procHandleIOFixed
+IN;11101100;procHandleIOVariable
+IN;11101101;procHandleIOVariable
+
+OUT;11100110;procHandleIOFixed
+OUT;11100111;procHandleIOFixed
+OUT;11101110;procHandleIOVariable
+OUT;11101111;procHandleIOVariable

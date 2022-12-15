@@ -351,6 +351,53 @@ section .text
 
         macReturnTwoArg
 
+    procIOSwap:
+        test al, 2
+        jz .skip_swap
+        xchg cx, dx
+        .skip_swap:
+        ret
+
+    procHandleIOReg:
+        push ax
+        mov di, cx
+        test al, 1
+        jz .w0
+            mov ax, word [_AX]
+            jmp .done
+        .w0:
+            mov ax, word [_AL]
+        .done:
+        mov word [di], ax
+        add di, 2
+        macPushZero
+        pop ax
+        ret
+
+    procHandleIOFixed:
+        push ax
+        call procHandleIOReg
+        
+        macReadSecondByte
+
+        mov di, dx
+        call writeB
+        macPushZero
+        pop ax
+        call procIOSwap
+        macReturnTwoArg
+
+    procHandleIOVariable:
+        push ax
+        call procHandleIOReg
+        mov di, dx
+        mov ax, word [_DX]
+        mov word [di], ax
+        add di, 2
+        macPushZero
+        pop ax
+        call procIOSwap
+        macReturnTwoArg
 
     procHandleFF:
         macReadSecondByte
@@ -671,8 +718,6 @@ section .text
         ret
 
     decodeSegRegister:
-        db 0xcc
-
         push ax
         push bx
         and ax, 0x0003

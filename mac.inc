@@ -104,4 +104,6 @@ section .text
     macReadByteWithCheck
 %endmacro
 
+%define BREAK db 0xcc
+
 %endif

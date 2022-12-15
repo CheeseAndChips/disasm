@@ -530,8 +530,19 @@ section .text
         call procGetData
         macReturnTwoArg
 
-    procHandleRegMem:
+    procHandleRegMemNoSwap:
         macReadSecondByte
+        call handleRegMem
+        ret
+
+    procHandleRegMemSwap:
+        macReadSecondByte
+        or ah, 0x01
+        call handleRegMem
+        xchg cx, dx
+        ret
+
+    handleRegMem:
         push ax
 
         mov di, cx

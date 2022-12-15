@@ -1,9 +1,9 @@
 NEG;MUL;IMUL;DIV;IDIV;NOT;SHL;SHR;SAR;ROL;ROR;RCL;RCR;DB
 
-MOV;10001000;procHandleRegMem
-MOV;10001001;procHandleRegMem
-MOV;10001010;procHandleRegMem
-MOV;10001011;procHandleRegMem
+MOV;10001000;procHandleRegMemNoSwap
+MOV;10001001;procHandleRegMemNoSwap
+MOV;10001010;procHandleRegMemNoSwap
+MOV;10001011;procHandleRegMemNoSwap
 
 MOV;11000110;procHandleMovImmRM
 MOV;11000111;procHandleMovImmRM
@@ -38,10 +38,10 @@ MOV;10001100;procHandleMovSegReg
 ;11010010;procHandleLogic
 ;11010011;procHandleLogic
 
-ADD;00000000;procHandleRegMem
-ADD;00000001;procHandleRegMem
-ADD;00000010;procHandleRegMem
-ADD;00000011;procHandleRegMem
+ADD;00000000;procHandleRegMemNoSwap
+ADD;00000001;procHandleRegMemNoSwap
+ADD;00000010;procHandleRegMemNoSwap
+ADD;00000011;procHandleRegMemNoSwap
 
 ;10000000;procHandleImmRegMem
 ;10000001;procHandleImmRegMem
@@ -50,58 +50,58 @@ ADD;00000011;procHandleRegMem
 ADD;00000100;procHandleImmAcc
 ADD;00000101;procHandleImmAcc
 
-ADC;00010000;procHandleRegMem
-ADC;00010001;procHandleRegMem
-ADC;00010010;procHandleRegMem
-ADC;00010011;procHandleRegMem
+ADC;00010000;procHandleRegMemNoSwap
+ADC;00010001;procHandleRegMemNoSwap
+ADC;00010010;procHandleRegMemNoSwap
+ADC;00010011;procHandleRegMemNoSwap
 
 ADC;00010100;procHandleImmAcc
 ADC;00010101;procHandleImmAcc
 
-SUB;00101000;procHandleRegMem
-SUB;00101001;procHandleRegMem
-SUB;00101010;procHandleRegMem
-SUB;00101011;procHandleRegMem
+SUB;00101000;procHandleRegMemNoSwap
+SUB;00101001;procHandleRegMemNoSwap
+SUB;00101010;procHandleRegMemNoSwap
+SUB;00101011;procHandleRegMemNoSwap
 
 SUB;00101100;procHandleImmAcc
 SUB;00101101;procHandleImmAcc
 
-SBB;00011000;procHandleRegMem
-SBB;00011001;procHandleRegMem
-SBB;00011010;procHandleRegMem
-SBB;00011011;procHandleRegMem
+SBB;00011000;procHandleRegMemNoSwap
+SBB;00011001;procHandleRegMemNoSwap
+SBB;00011010;procHandleRegMemNoSwap
+SBB;00011011;procHandleRegMemNoSwap
 
 SBB;00011100;procHandleImmAcc
 SBB;00011101;procHandleImmAcc
 
-CMP;00111000;procHandleRegMem
-CMP;00111001;procHandleRegMem
-CMP;00111010;procHandleRegMem
-CMP;00111011;procHandleRegMem
+CMP;00111000;procHandleRegMemNoSwap
+CMP;00111001;procHandleRegMemNoSwap
+CMP;00111010;procHandleRegMemNoSwap
+CMP;00111011;procHandleRegMemNoSwap
 
 CMP;00111100;procHandleImmAcc
 CMP;00111101;procHandleImmAcc
 
-AND;00100000;procHandleRegMem
-AND;00100001;procHandleRegMem
-AND;00100010;procHandleRegMem
-AND;00100011;procHandleRegMem
+AND;00100000;procHandleRegMemNoSwap
+AND;00100001;procHandleRegMemNoSwap
+AND;00100010;procHandleRegMemNoSwap
+AND;00100011;procHandleRegMemNoSwap
 
 AND;00100100;procHandleImmAcc
 AND;00100101;procHandleImmAcc
 
-OR;00001000;procHandleRegMem
-OR;00001001;procHandleRegMem
-OR;00001010;procHandleRegMem
-OR;00001011;procHandleRegMem
+OR;00001000;procHandleRegMemNoSwap
+OR;00001001;procHandleRegMemNoSwap
+OR;00001010;procHandleRegMemNoSwap
+OR;00001011;procHandleRegMemNoSwap
 
 OR;00001100;procHandleImmAcc
 OR;00001101;procHandleImmAcc
 
-XOR;00110000;procHandleRegMem
-XOR;00110001;procHandleRegMem
-XOR;00110010;procHandleRegMem
-XOR;00110011;procHandleRegMem
+XOR;00110000;procHandleRegMemNoSwap
+XOR;00110001;procHandleRegMemNoSwap
+XOR;00110010;procHandleRegMemNoSwap
+XOR;00110011;procHandleRegMemNoSwap
 
 XOR;00110100;procHandleImmAcc
 XOR;00110101;procHandleImmAcc
@@ -222,8 +222,8 @@ POP;01011101;procHandleRegInstr
 POP;01011110;procHandleRegInstr
 POP;01011111;procHandleRegInstr
 
-XCHG;10000110;procHandleRegMem
-XCHG;10000111;procHandleRegMem
+XCHG;10000110;procHandleRegMemNoSwap
+XCHG;10000111;procHandleRegMemNoSwap
 
 NOP;10010000;procHandleSingleByte
 XCHG;10010001;procHandleRegAcc
@@ -243,3 +243,9 @@ OUT;11100110;procHandleIOFixed
 OUT;11100111;procHandleIOFixed
 OUT;11101110;procHandleIOVariable
 OUT;11101111;procHandleIOVariable
+
+LEA;10001101;procHandleRegMemSwap
+LES;11000100;procHandleRegMemSwap
+LDS;11000101;procHandleRegMemSwap
+
+XLATB;11010111;procHandleSingleByte

@@ -337,6 +337,21 @@ section .text
         macPushZero
         macReturnOneArg
 
+    procHandleRegAcc:
+        mov di, dx
+        or al, 0x08
+        call decodeRegister
+        macPushZero
+
+        mov di, cx
+        mov ax, word [_AX]
+        mov word [di], ax
+        add di, 2
+        macPushZero
+
+        macReturnTwoArg
+
+
     procHandleFF:
         macReadSecondByte
 

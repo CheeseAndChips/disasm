@@ -221,3 +221,15 @@ POP;01011100;procHandleRegInstr
 POP;01011101;procHandleRegInstr
 POP;01011110;procHandleRegInstr
 POP;01011111;procHandleRegInstr
+
+XCHG;10000110;procHandleRegMem
+XCHG;10000111;procHandleRegMem
+
+XCHG;10010000;procHandleRegAcc
+XCHG;10010001;procHandleRegAcc
+XCHG;10010010;procHandleRegAcc
+XCHG;10010011;procHandleRegAcc
+XCHG;10010100;procHandleRegAcc
+XCHG;10010101;procHandleRegAcc
+XCHG;10010110;procHandleRegAcc
+XCHG;10010111;procHandleRegAcc

@@ -189,3 +189,6 @@ DAS;00101111;procHandleSingleByte
 
 CBW;10011000;procHandleSingleByte
 CWD;10011001;procHandleSingleByte
+
+REPE;11110011;procHandleRep
+REPNE;11110010;procHandleRep

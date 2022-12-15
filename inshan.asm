@@ -47,8 +47,21 @@ section .data
 
     _WORDPTR: db "WORD PTR ", 0
     _BYTEPTR: db "BYTE PTR ", 0
-        
 
+    _UNUSED: db "(unused)", 0
+
+    _REP_ALLOWED_INSTR:
+        db 0xa4 ; MOVSB
+        db 0xa5 ; MOVSW
+        db 0xa6 ; CMPSB
+        db 0xa7 ; CMPSW
+        db 0xaa ; STOSB
+        db 0xab ; STOSW
+        db 0xac ; LODSB
+        db 0xad ; LODSW
+        db 0xae ; SCASB
+        db 0xaf ; SCASW
+    _REP_TABLE_LEN equ $-_REP_ALLOWED_INSTR
 
 section .text
     procHandleMovImmRM:
@@ -308,7 +321,6 @@ section .text
         macReturnOneArg
 
     procHandleFF:
-        db 0xcc
         macReadSecondByte
 
         push ax
@@ -328,6 +340,38 @@ section .text
         call di
         ret
 
+    procHandleRep:
+        macReadSecondByte
+
+        db 0xcc
+
+        push cx
+        mov cx, _REP_TABLE_LEN
+        mov si, _REP_ALLOWED_INSTR
+        .l:
+            cmp byte [si], al
+            je .instr_found
+            inc si
+        loop .l
+        pop cx
+        mov si, _UNUSED
+        jmp .return
+
+        .instr_found:
+        pop cx
+        push bx
+        xor bx, bx
+        mov bl, al
+        shl bx, 2
+        add bx, instrDecodeTable
+        mov si, [bx+2]
+        pop bx
+
+        .return:
+        mov di, cx
+        call pushArr
+        macPushZero
+        macReturnOneArg
 
     procHandleIntersegment:
         mov di, cx

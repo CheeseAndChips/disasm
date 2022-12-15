@@ -399,6 +399,29 @@ section .text
         call procIOSwap
         macReturnTwoArg
 
+    procHandleIncReg:
+        or al, 0x8
+        mov di, cx
+        call decodeRegister
+        macReturnOneArg
+
+    procHandleIncRM:
+        macReadSecondByte
+
+        push ax
+            and al, 00111000b
+            macModEntry 000b, _INC
+            macModEntry 001b, _DEC
+
+            stc
+            pop ax
+            ret
+
+        .label_assigned:
+        pop ax
+        call procHandleModRMTwoByte
+        ret      
+
     procHandleFF:
         macReadSecondByte
 
@@ -410,6 +433,8 @@ section .text
             macModEntryCall 010b, _CALL, procHandleIndirect
             macModEntryCall 011b, _CALL, procHandleIndirectIntersegment
             macModEntryCall 110b, _PUSH, procHandleModRMTwoByte
+            macModEntryCall 000b, _INC, procHandleModRMTwoByte
+            macModEntryCall 001b, _DEC, procHandleModRMTwoByte
 
             pop ax
             stc

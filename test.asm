@@ -2,15 +2,4 @@ org 100h
 
 section .text
 start:
-	REP MOVSB
-	REP MOVSW
-	REP CMPSB
-	REP CMPSW
-	REP SCASB
-	REP SCASW
-	REP LODSB
-	REP LODSW
-	REP STOSB
-	REP STOSW
-	REP
-	ADD ax, bx
+	db 0x0f

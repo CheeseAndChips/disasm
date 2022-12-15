@@ -150,19 +150,10 @@ section .text
         call procDecodeModRMPtr
         macPushZero
 
-        push ax
-        push bx
         mov di, dx
-        shr al, 2
-        and al, 0x6
-        xor ah, ah
-        add ax, segregisters
-        mov bx, ax
-        mov ax, word [bx]
-        mov word [di], ax
-        add di, 2
-        macPushZero
-        pop bx
+        push ax
+        shr al, 3
+        call decodeSegRegister
         pop ax
 
         test ah, 2
@@ -263,6 +254,35 @@ section .text
 
         macReturnOneArg
         
+    procHandleSegReg:
+        shr al, 3
+        mov di, cx
+        call decodeSegRegister
+        macReturnOneArg
+    
+    procHandleModRMTwoByte:
+        mov di, cx
+        call procDecodeModRMPtr
+        macPushZero
+
+        macReturnOneArg
+
+    procHandlePopRM:
+        macReadSecondByte
+        test al, 111b << 3
+        jz .mod_ok
+        stc
+        ret
+        .mod_ok:
+        call procHandleModRMTwoByte
+        ret
+
+    procHandleRegInstr:
+        or al, 0x08
+        mov di, cx
+        call decodeRegister
+        macReturnOneArg
+
     procHandleMul:
         macReadSecondByte
         push ax
@@ -289,11 +309,8 @@ section .text
         .label_assigned:
         pop ax
 
-        mov di, cx
-        call procDecodeModRMPtr
-        macPushZero
-
-        macReturnOneArg
+        call procHandleModRMTwoByte
+        ret
 
     procHandleDirect:
         mov di, cx
@@ -330,7 +347,7 @@ section .text
             macModEntryCall 101b, _JMP, procHandleIndirectIntersegment
             macModEntryCall 010b, _CALL, procHandleIndirect
             macModEntryCall 011b, _CALL, procHandleIndirectIntersegment
-            ; macModEntryCall 100b, _JMP, procHandleIndirect
+            macModEntryCall 110b, _PUSH, procHandleModRMTwoByte
 
             pop ax
             stc
@@ -342,8 +359,6 @@ section .text
 
     procHandleRep:
         macReadSecondByte
-
-        db 0xcc
 
         push cx
         mov cx, _REP_TABLE_LEN
@@ -640,7 +655,22 @@ section .text
         pop ax
         ret
 
-    
+    decodeSegRegister:
+        db 0xcc
+
+        push ax
+        push bx
+        and ax, 0x0003
+        shl al, 1
+
+        add ax, segregisters
+        mov bx, ax
+        mov ax, word [bx]
+        mov word [di], ax
+        add di, 2
+        macPushZero
+        pop bx
+        pop ax
 
     decodeRegister:
         push ax

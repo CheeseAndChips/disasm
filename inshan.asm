@@ -1,5 +1,5 @@
 section .data
-    registers:
+    _REGISTERS:
         _AL: db "AL"
         _CL: db "CL"
         _DL: db "DL"
@@ -17,7 +17,7 @@ section .data
         _SI: db "SI"
         _DI: db "DI"
 
-    segregisters:
+    _SEGREGISTERS:
         _ES: db "ES"
         _CS: db "CS"
         _SS: db "SS"
@@ -74,12 +74,12 @@ section .text
         mov di, dx
         test ah, 1
         jnz .dataW
-            call readDataB
-            call writeB
+            call procReadDataB
+            call procWriteB
             jmp .done
         .dataW:
-            call readDataW
-            call writeW
+            call procReadDataW
+            call procWriteW
 
         .done:
         macPushZero
@@ -88,18 +88,18 @@ section .text
 
     procHandleMovImmReg:
         mov di, cx
-        call decodeRegister
+        call procDecodeRegister
         macPushZero
 
         mov di, dx
         test al, 0x08
         jnz .dataW
-            call readDataB
-            call writeB
+            call procReadDataB
+            call procWriteB
             jmp .done
         .dataW:
-            call readDataW
-            call writeW
+            call procReadDataW
+            call procWriteW
 
         .done:
         macPushZero
@@ -126,11 +126,11 @@ section .text
         push dx
 
             mov dl, '['
-            call pushC
-            call readDataW
-            call writeW
+            call procPushC
+            call procReadDataW
+            call procWriteW
             mov dl, ']'
-            call pushC
+            call procPushC
 
         pop dx
         macPushZero
@@ -153,7 +153,7 @@ section .text
         mov di, dx
         push ax
         shr al, 3
-        call decodeSegRegister
+        call procDecodeSegRegister
         pop ax
 
         test ah, 2
@@ -181,7 +181,7 @@ section .text
         .write1:
             push dx
             mov dl, '1'
-            call pushC
+            call procPushC
             pop dx
         .done:       
         macPushZero
@@ -216,7 +216,7 @@ section .text
         shr al, 3
         and al, 0x7
         or al, ah
-        call decodeRegister
+        call procDecodeRegister
         macPushZero
 
         macReturnTwoArg
@@ -230,12 +230,12 @@ section .text
 
         test ah, 1
         jz .dataB
-            call readDataW
-            call writeW
+            call procReadDataW
+            call procWriteW
             jmp .done
         .dataB:
-            call readDataB
-            call writeB
+            call procReadDataB
+            call procWriteB
         .done:
         macPushZero
 
@@ -246,10 +246,10 @@ section .text
         cbw
 
         add ax, word [CURRENTBYTE]
-        call addBytesRead
+        call procAddBytesRead
 
         mov di, cx
-        call writeW
+        call procWriteW
         macPushZero
 
         macReturnOneArg
@@ -257,7 +257,7 @@ section .text
     procHandleSegReg:
         shr al, 3
         mov di, cx
-        call decodeSegRegister
+        call procDecodeSegRegister
         macReturnOneArg
     
     procHandleModRMTwoByte:
@@ -280,10 +280,10 @@ section .text
     procHandleRegInstr:
         or al, 0x08
         mov di, cx
-        call decodeRegister
+        call procDecodeRegister
         macReturnOneArg
 
-    procHandleMul:
+    procHandleMulDivNegNot:
         macReadSecondByte
         push ax
             and al, 00111000b
@@ -314,12 +314,12 @@ section .text
 
     procHandleDirect:
         mov di, cx
-        call readDataW
+        call procReadDataW
 
         add ax, word [CURRENTBYTE]
-        call addBytesRead
+        call procAddBytesRead
 
-        call writeW
+        call procWriteW
         macPushZero
         macReturnOneArg
 
@@ -332,7 +332,7 @@ section .text
     procHandleIndirectIntersegment:
         mov di, cx
         mov si, _FAR
-        call pushArr
+        call procPushArr
         call procDecodeModRM
         macPushZero
         macReturnOneArg
@@ -340,7 +340,7 @@ section .text
     procHandleRegAcc:
         mov di, dx
         or al, 0x08
-        call decodeRegister
+        call procDecodeRegister
         macPushZero
 
         mov di, cx
@@ -381,7 +381,7 @@ section .text
         macReadSecondByte
 
         mov di, dx
-        call writeB
+        call procWriteB
         macPushZero
         pop ax
         call procIOSwap
@@ -402,7 +402,7 @@ section .text
     procHandleIncReg:
         or al, 0x8
         mov di, cx
-        call decodeRegister
+        call procDecodeRegister
         macReturnOneArg
 
     procHandleIncRM:
@@ -471,41 +471,41 @@ section .text
 
         .return:
         mov di, cx
-        call pushArr
+        call procPushArr
         macPushZero
         macReturnOneArg
 
     procHandleIntersegment:
         mov di, cx
-        call readDataW
+        call procReadDataW
         push ax
-        call readDataW
-        call writeW
+        call procReadDataW
+        call procWriteW
         mov dl, ':'
-        call pushC
+        call procPushC
         pop ax
-        call writeW
+        call procWriteW
         macPushZero
         macReturnOneArg
 
     procHandleRetAdd:
         mov di, cx
-        call readDataW
-        call writeW
+        call procReadDataW
+        call procWriteW
         macPushZero
         macReturnOneArg
 
     procHandleInt:
         mov di, cx
-        call readDataB
-        call writeB
+        call procReadDataB
+        call procWriteB
         macPushZero
         macReturnOneArg
 
     procHandleInt3:
         mov di, cx
         mov dl, '3'
-        call pushC
+        call procPushC
         macPushZero
         macReturnOneArg
     
@@ -515,19 +515,19 @@ section .text
         test al, 1
         jz .handle_al
             mov dx, word [_AX]
-            call readDataW
-            call writeW
+            call procReadDataW
+            call procWriteW
             jmp .postif
         .handle_al:
             mov dx, word [_AL]
-            call readDataB
-            call writeB
+            call procReadDataB
+            call procWriteB
         .postif:
         macPushZero
         mov di, cx
-        call pushC
+        call procPushC
         mov dl, dh
-        call pushC
+        call procPushC
         macPushZero
         pop dx
         macReturnTwoArg
@@ -578,7 +578,7 @@ section .text
         and ah, 1
         shl ah, 3
         or al, ah
-        call decodeRegister
+        call procDecodeRegister
         macPushZero
 
         pop ax
@@ -606,7 +606,7 @@ section .text
         .dataW:
             mov si, _WORDPTR
         .writeptr:
-        call pushArr
+        call procPushArr
         pop si
 
         .start_decode:
@@ -628,7 +628,7 @@ section .text
 
         push dx
         mov dl, '['
-        call pushC
+        call procPushC
         pop dx
 
         test al, 0xc0
@@ -640,8 +640,8 @@ section .text
 
         .decode_rm:
         mov ax, [bp]
-        call getRMTable
-        call pushArr
+        call procGetRMTable
+        call procPushArr
 
         .skip_rm:
         mov ax, [bp]
@@ -661,8 +661,8 @@ section .text
             cmp al, 0x6
             jnz .skip_read
 
-            call readDataW
-            call writeW
+            call procReadDataW
+            call procWriteW
             inc di
 
             .skip_read:
@@ -670,23 +670,23 @@ section .text
             jmp .post_mod
 
         .mod_01:
-            call readDataB
+            call procReadDataB
             test al, 0x80
             jnz .has_sign
 
-            call writeB
+            call procWriteB
             jmp .post_mod
 
             .has_sign:
             dec di
             mov dl, '-'
-            call pushC
+            call procPushC
             neg al
-            call writeB
+            call procWriteB
             jmp .post_mod
         .mod_10:
-            call readDataW
-            call writeW  
+            call procReadDataW
+            call procWriteW  
             jmp .post_mod
         .mod_11: ; register
             mov ax, [bp]
@@ -694,13 +694,13 @@ section .text
             shl ah, 3
             and al, 0x07
             or al, ah
-            call decodeRegister
+            call procDecodeRegister
             jmp .post_brackets
 
         .post_mod:
         push dx
         mov dl, ']'
-        call pushC
+        call procPushC
         pop dx
         .post_brackets:
         macPushZero
@@ -721,17 +721,17 @@ section .text
         jz .datasb
         
         .dataw:
-            call readDataW
-            call writeW
+            call procReadDataW
+            call procWriteW
             jmp .post_data
 
         .datab:
-            call readDataB
-            call writeB
+            call procReadDataB
+            call procWriteB
             jmp .post_data
 
         .datasb:
-            call readDataB
+            call procReadDataB
             cmp al, 0x80
             push dx
             jnz .no_negative
@@ -741,9 +741,9 @@ section .text
             .no_negative:
                 mov dl, '+'
             .write:
-            call pushC
+            call procPushC
             pop dx
-            call writeB
+            call procWriteB
             jmp .post_data
         
         .post_data:
@@ -751,13 +751,13 @@ section .text
         pop ax
         ret
 
-    decodeSegRegister:
+    procDecodeSegRegister:
         push ax
         push bx
         and ax, 0x0003
         shl al, 1
 
-        add ax, segregisters
+        add ax, _SEGREGISTERS
         mov bx, ax
         mov ax, word [bx]
         mov word [di], ax
@@ -766,12 +766,12 @@ section .text
         pop bx
         pop ax
 
-    decodeRegister:
+    procDecodeRegister:
         push ax
         push bx
         push cx
 
-        mov bx, registers
+        mov bx, _REGISTERS
         and ax, 0xf
         shl ax, 1
         add bx, ax
@@ -787,7 +787,7 @@ section .text
 
         ret
 
-    getRMTable:
+    procGetRMTable:
         push ax
         push bx
         xor ah, ah
@@ -800,11 +800,11 @@ section .text
         pop ax
         ret
 
-    readDataB:
+    procReadDataB:
         macReadByteWithCheck
         ret
 
-    readDataW:
+    procReadDataW:
         push cx
         macReadByteWithCheck
         mov cl, al

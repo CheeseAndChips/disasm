@@ -128,8 +128,8 @@ LOOPZW;11100001;procHandleDispJump
 LOOPNZW;11100000;procHandleDispJump
 JCXZ;11100011;procHandleDispJump
 
-;11110110;procHandleMul
-;11110111;procHandleMul
+;11110110;procHandleMulDivNegNot
+;11110111;procHandleMulDivNegNot
 
 CALL;11101000;procHandleDirect
 CALL;10011010;procHandleIntersegment

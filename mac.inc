@@ -54,7 +54,7 @@ section .text
 %endmacro
 
 %macro macPushZero 0
-    call pushZero
+    call procPushZero
 %endmacro
 
 %macro macReturnNoArg 0
@@ -93,7 +93,7 @@ section .text
 %endmacro
 
 %macro macReadByteWithCheck 0
-    call readByte
+    call procReadByte
     jnc %%no_failure
 	xor bx, bx
     %%no_failure:

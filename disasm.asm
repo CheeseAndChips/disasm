@@ -33,7 +33,7 @@ section .data
 
 section .text
 start:
-	call openFiles
+	call procOpenFiles
 
 	.loop:
 		mov word [READCNT], 0
@@ -44,15 +44,15 @@ start:
 	jmp .loop
 
 	.exit:
-	call exitProgram
+	call procExitProgram
 
-openFiles:
+procOpenFiles:
 	; check if arguments are /?
 	mov cx, 3
 	mov si, 0x82
 	mov di, show_help_arg
 	repe cmpsb
-	je showHelp
+	je procShowHelp
 
 	; find first space	
 	mov cl, byte [0x80] ; ch is already 0
@@ -62,7 +62,7 @@ openFiles:
 	
 	; if no space was found, show help
 	test cx, cx
-	jz showHelp
+	jz procShowHelp
 
 	mov [OUTFD], di ; save location of second file path
 	mov byte [di-1], 0 ; make asciiz string
@@ -70,31 +70,31 @@ openFiles:
 	; try finding next space
 	repne scasb
 	test cx, cx
-	jnz showHelp ; show help if found
+	jnz procShowHelp ; show help if found
 
 	mov byte [di-1], 0
 
 	mov ax, 0x3d00
 	mov dx, 0x82
 	int 0x21
-	jc showFileOpenError
+	jc procShowFileOpenError
 	mov [INFD], ax
 
 	mov ax, 0x3c00
 	mov dx, [OUTFD]
 	int 0x21
-	jc showFileOpenError
+	jc procShowFileOpenError
 	mov [OUTFD], ax
 	ret
 
-addBytesRead:
+procAddBytesRead:
 	push bx
 	mov bx, word [READCNT]
 	add ax, bx
 	pop bx
 	ret
 
-fillRingBuffer:
+procFillRingBuffer:
 	test cx, cx
 	jnz .have_bytes
 	ret
@@ -122,13 +122,12 @@ fillRingBuffer:
 	ret
 
 procDecodeByte:
-	; read instruction and find procedure for decoding
-    call readByte
+    call procReadByte
     jnc .no_failure
 	ret
     .no_failure:
 
-	call writeCSIP
+	call procWriteCSIP
 	push ax
 	xor ah, ah
 	mov bx, instrDecodeTable
@@ -162,13 +161,13 @@ procDecodeByte:
 	xor dx, dx
 	mov di, cx
 	mov al, byte [BYTESREAD]
-	call writeB
+	call procWriteB
 	macPushZero
 	push cx
 	mov si, BYTESREAD+1
 	mov cx, [READCNT]
 	dec cx
-	call fillRingBuffer
+	call procFillRingBuffer
 	mov word [READCNT], 1
 	mov bx, _DB
 	pop cx
@@ -176,28 +175,28 @@ procDecodeByte:
 	
 	.write_result:
 
-	call writeResult
+	call procWriteResult
 	
 	clc
 	ret
-writeCSIP:
+procWriteCSIP:
 	push ax
 	mov ax, 0x0734
-	call fWriteW
+	call procFWriteW
 
 	mov al, ':'
-	call fPutC
+	call procFPutC
 
 	mov ax, word [CURRENTBYTE]
-	call fWriteW
+	call procFWriteW
 
 	mov al, ' '
-	call fPutC
+	call procFPutC
 	pop ax
 
 	ret
 
-writeResult:
+procWriteResult:
 	; 1. write decoded bytes
 	mov word [LINE_COUNTER], 0
 	mov di, BYTESREAD
@@ -207,17 +206,17 @@ writeResult:
 		.loop1:
 			mov al, [di]
 			inc di
-			call fWriteB
+			call procFWriteB
 		loop .loop1
 
 		mov cx, 18
-		call spaceFill
+		call procSpaceFill
 
 		; 2. write instruction
 		mov word [LINE_COUNTER], 0
 		mov di, bx
 
-		call fPutArrZero
+		call procFPutArrZero
 	pop cx
 
 	test cx, cx
@@ -226,26 +225,26 @@ writeResult:
 	.write_arg1:
 	push cx
 		mov cx, 8
-		call spaceFill
+		call procSpaceFill
 	pop cx
 
 	mov di, cx
-	call fPutArrZero
+	call procFPutArrZero
 
 	test dx, dx
 	jz .done
 
 	mov al, ','
-	call fPutC
+	call procFPutC
 	mov di, dx
-	call fPutArrZero
+	call procFPutArrZero
 
 	.done:
 	mov ax, 0x0a0d
-	call fPutW
+	call procFPutW
 	ret
 
-spaceFill:
+procSpaceFill:
 	push ax
 	mov ax, word [LINE_COUNTER]
 	sub cx, ax
@@ -256,21 +255,21 @@ spaceFill:
 	.do_write:
 	mov al, ' '
 	.loop:
-		call fPutC
+		call procFPutC
 	loop .loop
 
 	pop ax
 	ret
 
-exitProgram:
-	call flushBuffer
+procExitProgram:
+	call procFlushBuffer
 	macExitProgram
 
-showHelp:
+procShowHelp:
 	macWriteStr "Joris Pevcevicius", crlf, "1 kursas 3 grupe", crlf, ".com programu disassembleris", crlf, "Naudojimas: disasm.com <programa.com> <rezultatas.asm>", crlf
 	macExitProgram
 
-showFileOpenError:
+procShowFileOpenError:
 	xor ax, ax
 	mov di, dx
 	mov cx, 0xffff
@@ -281,7 +280,7 @@ showFileOpenError:
 	macExitProgram
 
 
-readByte:
+procReadByte:
 	push bx
 	push cx
 
@@ -334,7 +333,7 @@ readByte:
 	pop bx
 	ret
 
-flushBuffer:
+procFlushBuffer:
 	push ax
 	push bx
 	push cx
@@ -354,7 +353,7 @@ flushBuffer:
 	ret
 
 ; al - char
-fPutC:
+procFPutC:
 	push di
 	push bx
 
@@ -363,7 +362,7 @@ fPutC:
 	
 	cmp bl, BUFFER_SIZE
 	jnz .skip_writing
-		call flushBuffer
+		call procFlushBuffer
 		xor bx, bx
 	.skip_writing:
 	mov byte [di+bx], al
@@ -374,38 +373,38 @@ fPutC:
 	pop di
 	ret
 
-fPutW:
+procFPutW:
 	push ax
-	call fPutC
+	call procFPutC
 	mov al, ah
-	call fPutC
+	call procFPutC
 	pop ax
 	ret
 
-fWriteW:
+procFWriteW:
 	push di
 	sub sp, 4
 	mov di, sp
 
-	call writeW
+	call procWriteW
 	mov cx, 4
 	mov di, sp
-	call fPutArr
+	call procFPutArr
 
 	add sp, 4
 	pop di
 	ret
 
-fWriteB:
+procFWriteB:
 	push cx
 	push di
 	sub sp, 2
 	mov di, sp
 
-	call writeB
+	call procWriteB
 	mov cx, 2
 	mov di, sp
-	call fPutArr
+	call procFPutArr
 	
 	add sp, 2
 	pop di
@@ -413,7 +412,7 @@ fWriteB:
 	ret
 
 ; di - data, cx - cnt
-fPutArr:
+procFPutArr:
 	test cx, cx
 	jnz .start_write
 	ret
@@ -424,7 +423,7 @@ fPutArr:
 	xor bx, bx
 	.loop:
 		mov al, byte [di+bx]
-		call fPutC
+		call procFPutC
 		inc bx
 		cmp bx, cx
 	jnz .loop
@@ -433,7 +432,7 @@ fPutArr:
 	ret
 
 ; di - data
-fPutArrZero:
+procFPutArrZero:
 	push di
 	push ax
 	.loop:
@@ -441,45 +440,26 @@ fPutArrZero:
 		inc di
 		test al, al
 		jz .post_loop
-		call fPutC
+		call procFPutC
 	jmp .loop
 	.post_loop:
 	pop ax
 	pop di
 	ret
 
-getArrSize:
-	push cx
-	push di
-
-	xor cx, cx
-	.loop:
-		mov al, byte [di]
-		inc di
-		test al, al
-		jz .done
-		inc cx
-	jmp .loop
-
-	.done:
-	mov ax, cx
-	pop di
-	pop cx
-	ret
-
 ; dl - char
 ; di - destination
-pushC:
+procPushC:
 	mov byte [di], dl
 	inc di
 	ret
 
-pushZero:
+procPushZero:
 	mov byte [di], 0
 	inc di
 	ret
 
-pushArr:
+procPushArr:
 	push dx
 	cmp byte [si], 0
 	jnz .skip_ret
@@ -487,14 +467,14 @@ pushArr:
 	ret
 	.skip_ret:
 		mov dl, byte [si]
-		call pushC
+		call procPushC
 		inc si
 		cmp byte [si], 0
 		jnz .skip_ret
 	pop dx
 	ret
 
-writeB:
+procWriteB:
 	push dx
 	push ax
 
@@ -508,7 +488,7 @@ writeB:
 	add dl, 'A' - 10	
 	.after_change:
 
-	call pushC
+	call procPushC
 
 	pop ax
 	push ax
@@ -522,18 +502,18 @@ writeB:
 	add dl, 'A' - 10	
 	.after_change2:
 
-	call pushC
+	call procPushC
 
 	pop ax
 	pop dx
 	ret
 
-writeW:
+procWriteW:
 	push ax
 	mov al, ah
-	call writeB
+	call procWriteB
 	pop ax
-	call writeB
+	call procWriteB
 	ret
 
 %include "inshan.asm"

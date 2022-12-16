@@ -4,6 +4,9 @@ org 100h
 
 %define BUFFER_SIZE 255
 %define OPERAND_SIZE 32
+%define RING_BUFFER_POW 5
+%define RING_BUFFER_SIZE (1 << RING_BUFFER_POW)
+%define RING_BUFFER_MASK RING_BUFFER_SIZE - 1; 0b1000 => 0b0111
 
 section .bss
 	INFD: resb 2
@@ -15,12 +18,15 @@ section .bss
 	READCNT: resb 2
 	LINE_COUNTER: resb 2
 	INPUT_BUFFER: resb BUFFER_SIZE
+	RING_BUFFER: resb RING_BUFFER_SIZE
 
 section .data
 	OUTBUFFERUSED: dw 0
 	CURRENTBYTE: dw 0x100
 	INPUT_FILLED: dw 0
 	INPUT_USED: dw 0
+	RING_BUFFER_OFFSET: dw 0
+	RING_BUFFER_FILLED: dw 0
 
 	show_help_arg: db "/?", 0x0d
 	crlf_: db crlf, 0
@@ -88,9 +94,39 @@ addBytesRead:
 	pop bx
 	ret
 
+fillRingBuffer:
+	test cx, cx
+	jnz .have_bytes
+	ret
+	.have_bytes:
+	push bx
+	push cx
+	push si
+	push di
+
+	add word [RING_BUFFER_FILLED], cx
+
+	mov bx, word [RING_BUFFER_OFFSET]
+	mov di, RING_BUFFER
+	.l:
+		lodsb
+		mov byte [RING_BUFFER + bx], al
+		inc bx
+		and bx, RING_BUFFER_MASK
+	loop .l
+
+	pop di
+	pop si
+	pop cx
+	pop bx
+	ret
+
 procDecodeByte:
 	; read instruction and find procedure for decoding
-	macReadByteWithCheck
+    call readByte
+    jnc .no_failure
+	ret
+    .no_failure:
 
 	call writeCSIP
 	push ax
@@ -118,7 +154,8 @@ procDecodeByte:
 	mov dx, RIGHT_OPERAND
 	clc
 	call di
-	jnc .write_result
+	test bx, bx
+	jnz .write_result
 
 	.parse_failure:
 	mov cx, LEFT_OPERAND
@@ -127,7 +164,14 @@ procDecodeByte:
 	mov al, byte [BYTESREAD]
 	call writeB
 	macPushZero
+	push cx
+	mov si, BYTESREAD+1
+	mov cx, [READCNT]
+	dec cx
+	call fillRingBuffer
+	mov word [READCNT], 1
 	mov bx, _DB
+	pop cx
 	jmp .write_result
 	
 	.write_result:
@@ -241,6 +285,18 @@ readByte:
 	push bx
 	push cx
 
+	cmp word [RING_BUFFER_FILLED], 0
+	jz .ring_empty
+	mov bx, word [RING_BUFFER_OFFSET]
+	mov al, byte [RING_BUFFER+bx]
+	dec word [RING_BUFFER_FILLED]
+	inc bx
+	and bx, RING_BUFFER_MASK
+	mov word [RING_BUFFER_OFFSET], bx
+	jmp .update_globals
+	
+
+	.ring_empty:
 	mov bx, word [INPUT_USED]
 	mov cx, word [INPUT_FILLED]
 	cmp bx, cx
@@ -267,6 +323,7 @@ readByte:
 	mov al, byte [INPUT_BUFFER+bx]
 	inc word [INPUT_USED]
 
+	.update_globals:
 	mov bx, word [READCNT]
 	mov byte [BYTESREAD+bx], al
 	inc word [READCNT]

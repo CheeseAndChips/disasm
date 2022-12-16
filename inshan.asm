@@ -271,7 +271,7 @@ section .text
         macReadSecondByte
         test al, 111b << 3
         jz .mod_ok
-        stc
+        xor bx, bx
         ret
         .mod_ok:
         call procHandleModRMTwoByte
@@ -304,7 +304,7 @@ section .text
             macModEntry 010b, _NOT
             
             pop ax
-            stc
+            xor bx, bx
             ret
         .label_assigned:
         pop ax
@@ -413,7 +413,7 @@ section .text
             macModEntry 000b, _INC
             macModEntry 001b, _DEC
 
-            stc
+            xor bx, bx
             pop ax
             ret
 
@@ -437,7 +437,7 @@ section .text
             macModEntryCall 001b, _DEC, procHandleModRMTwoByte
 
             pop ax
-            stc
+            xor bx, bx
             ret
         .label_assigned:
         pop ax
@@ -805,11 +805,11 @@ section .text
         ret
 
     readDataW:
-        push bx
+        push cx
         macReadByteWithCheck
-        mov bl, al
+        mov cl, al
         macReadByteWithCheck
-        mov bh, al
-        mov ax, bx
-        pop bx
+        mov ch, al
+        mov ax, cx
+        pop cx
         ret

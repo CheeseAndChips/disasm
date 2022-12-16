@@ -95,7 +95,7 @@ section .text
 %macro macReadByteWithCheck 0
     call readByte
     jnc %%no_failure
-    ret
+	xor bx, bx
     %%no_failure:
 %endmacro
 

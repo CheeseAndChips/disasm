@@ -5,7 +5,7 @@ labels = []
 
 with open('instr.txt', 'r') as f:
 	additional = f.readline().rstrip()
-	labels = list(additional.split(';'))
+	labels = set(additional.split(';'))
 	for i, line in enumerate(f):
 		line = line.rstrip()
 		if not line:
@@ -14,16 +14,14 @@ with open('instr.txt', 'r') as f:
 		label, opcode, handler = line.split(';')
 		opcode = int(opcode, base=2)
 
-		if not label:
-			label = None
-
-		if label not in labels:
-			labels.append(label)
-		if instr[opcode] != None:
+		if label and label not in labels:
+			labels.add(label)
+		
+		if instr[opcode]:
 			print(f'Duplicate on line {line}')
 			exit(1)
-		else:
-			instr[opcode] = (label, handler)
+		
+		instr[opcode] = (label, handler)
 
 with open('insinc.asm', 'w') as f:
 	f.write('section .data\n')
@@ -32,13 +30,15 @@ with open('insinc.asm', 'w') as f:
 		if l:
 			f.write(f'\t\t_{l}: db "{l}", 0\n')
 	
+	genString = lambda label, handler: f'\t\tdw {handler}, {"_"+label if label else "0"}'
+	maxlen = max(len(genString(*instr[i])) for i in range(256) if instr[i])
+
 	f.write('\tinstrDecodeTable:\n')
 	for i in range(256):
-		if instr[i] == None:
-			f.write(f'\t\tdw 0, 0\n')
+		if not instr[i]:
+			s = genString(None, '0')
 		else:
-			label, handler = instr[i]
-			if not label:
-				f.write(f'\t\tdw {handler}, 0\n')
-			else:
-				f.write(f'\t\tdw {handler}, _{label}\n')
+			s = genString(*instr[i])
+		
+		f.write(f'{s}{((maxlen - len(s)) * " ")} ; {hex(i)}\n')
+

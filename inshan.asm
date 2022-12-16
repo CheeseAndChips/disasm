@@ -275,12 +275,14 @@ section .text
         ret
         .mod_ok:
         call procHandleModRMTwoByte
-        ret
+        macPushZero
+        macReturnOneArg
 
     procHandleRegInstr:
         or al, 0x08
         mov di, cx
         call procDecodeRegister
+        macPushZero
         macReturnOneArg
 
     procHandleMulDivNegNot:
@@ -403,6 +405,7 @@ section .text
         or al, 0x8
         mov di, cx
         call procDecodeRegister
+        macPushZero
         macReturnOneArg
 
     procHandleIncRM:
@@ -420,7 +423,7 @@ section .text
         .label_assigned:
         pop ax
         call procHandleModRMTwoByte
-        ret      
+        macReturnOneArg
 
     procHandleFF:
         macReadSecondByte
@@ -551,6 +554,7 @@ section .text
 
         mov di, cx
         call procDecodeModRMPtr
+        macPushZero
         mov di, dx
         call procGetData
         macReturnTwoArg
@@ -679,8 +683,10 @@ section .text
 
             .has_sign:
             dec di
+            push dx
             mov dl, '-'
             call procPushC
+            pop dx
             neg al
             call procWriteB
             jmp .post_mod
@@ -780,6 +786,7 @@ section .text
         mov word[di], cx
 
         add di, 2
+        macPushZero
 
         pop cx
         pop bx

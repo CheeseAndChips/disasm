@@ -53,25 +53,18 @@ section .text
 	%assign BP_OFFSET BP_OFFSET+%2
 %endmacro
 
-%macro macPushZero 0
-    call procPushZero
-%endmacro
-
 %macro macReturnNoArg 0
 	xor cx, cx
 	xor dx, dx
-	clc
 	ret
 %endmacro
 
 %macro macReturnOneArg 0
 	xor dx, dx
-	clc
 	ret
 %endmacro
 
 %macro macReturnTwoArg 0
-	clc
 	ret
 %endmacro
 

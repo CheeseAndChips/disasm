@@ -122,6 +122,14 @@ procFillRingBuffer:
 	ret
 
 procDecodeByte:
+	xor bx, bx
+	.l:
+		mov byte [LEFT_OPERAND+bx], 0
+		mov byte [RIGHT_OPERAND+bx], 0
+		inc bx
+		cmp bx, OPERAND_SIZE
+	jl .l
+
     call procReadByte
     jnc .no_failure
 	ret
@@ -140,18 +148,9 @@ procDecodeByte:
 	mov bx, word [bx+2]
 	jz .parse_failure
 
-	; in:
-	; al - opcode
-	; cx - left operand
-	; dx - right operand
-	; out:
-	; bx - instruction string
-	; cx - left operand
-	; dx - right operand
 	.decode:
 	mov cx, LEFT_OPERAND
 	mov dx, RIGHT_OPERAND
-	clc
 	call di
 	test bx, bx
 	jnz .write_result
@@ -162,7 +161,7 @@ procDecodeByte:
 	mov di, cx
 	mov al, byte [BYTESREAD]
 	call procWriteB
-	macPushZero
+	mov byte [di], 0
 	push cx
 	mov si, BYTESREAD+1
 	mov cx, [READCNT]
@@ -179,9 +178,15 @@ procDecodeByte:
 	
 	clc
 	ret
+
 procWriteCSIP:
 	push ax
-	mov ax, 0x0734
+	%ifdef LARGE_TEST_DEBUG
+		mov ax, 0x734
+	%else
+		push cs
+		pop ax
+	%endif
 	call procFWriteW
 
 	mov al, ':'

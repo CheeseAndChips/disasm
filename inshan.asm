@@ -69,7 +69,6 @@ section .text
 
         mov di, cx
         call procDecodeModRMPtr
-        macPushZero
 
         mov di, dx
         test ah, 1
@@ -82,14 +81,11 @@ section .text
             call procWriteW
 
         .done:
-        macPushZero
-
         macReturnTwoArg
 
     procHandleMovImmReg:
         mov di, cx
         call procDecodeRegister
-        macPushZero
 
         mov di, dx
         test al, 0x08
@@ -102,7 +98,6 @@ section .text
             call procWriteW
 
         .done:
-        macPushZero
         
         macReturnTwoArg
 
@@ -120,7 +115,6 @@ section .text
         mov word [di], ax
         pop ax
         add di, 2
-        macPushZero
 
         mov di, dx
         push dx
@@ -133,7 +127,6 @@ section .text
             call procPushC
 
         pop dx
-        macPushZero
 
         test al, 2
         jz .skip_swap
@@ -148,7 +141,6 @@ section .text
         mov di, cx
         or ah, 1
         call procDecodeModRMPtr
-        macPushZero
 
         mov di, dx
         push ax
@@ -167,7 +159,6 @@ section .text
 
         mov di, cx
         call procDecodeModRMPtr
-        macPushZero
 
         mov di, dx
         test ah, 2
@@ -183,8 +174,7 @@ section .text
             mov dl, '1'
             call procPushC
             pop dx
-        .done:       
-        macPushZero
+        .done:
 
         push ax
             and al, 00111000b
@@ -197,7 +187,7 @@ section .text
             macModEntry 010b, _RCL
             macModEntry 011b, _RCR
 
-            stc
+            xor bx, bx
             
         .label_assigned:
         pop ax
@@ -208,7 +198,6 @@ section .text
         
         mov di, cx
         call procDecodeModRM
-        macPushZero
 
         mov di, dx
         and ah, 1
@@ -217,14 +206,12 @@ section .text
         and al, 0x7
         or al, ah
         call procDecodeRegister
-        macPushZero
 
         macReturnTwoArg
 
     procHandleTestImmRM:
         mov di, cx
         call procDecodeModRMPtr
-        macPushZero
 
         mov di, dx
 
@@ -237,7 +224,6 @@ section .text
             call procReadDataB
             call procWriteB
         .done:
-        macPushZero
 
         macReturnTwoArg
 
@@ -250,7 +236,6 @@ section .text
 
         mov di, cx
         call procWriteW
-        macPushZero
 
         macReturnOneArg
         
@@ -263,7 +248,6 @@ section .text
     procHandleModRMTwoByte:
         mov di, cx
         call procDecodeModRMPtr
-        macPushZero
 
         macReturnOneArg
 
@@ -275,14 +259,12 @@ section .text
         ret
         .mod_ok:
         call procHandleModRMTwoByte
-        macPushZero
         macReturnOneArg
 
     procHandleRegInstr:
         or al, 0x08
         mov di, cx
         call procDecodeRegister
-        macPushZero
         macReturnOneArg
 
     procHandleMulDivNegNot:
@@ -312,7 +294,7 @@ section .text
         pop ax
 
         call procHandleModRMTwoByte
-        ret
+        macReturnTwoArg
 
     procHandleDirect:
         mov di, cx
@@ -322,13 +304,11 @@ section .text
         call procAddBytesRead
 
         call procWriteW
-        macPushZero
         macReturnOneArg
 
     procHandleIndirect:
         mov di, cx
         call procDecodeModRMPtr
-        macPushZero
         macReturnOneArg
 
     procHandleIndirectIntersegment:
@@ -336,20 +316,17 @@ section .text
         mov si, _FAR
         call procPushArr
         call procDecodeModRM
-        macPushZero
         macReturnOneArg
 
     procHandleRegAcc:
         mov di, dx
         or al, 0x08
         call procDecodeRegister
-        macPushZero
 
         mov di, cx
         mov ax, word [_AX]
         mov word [di], ax
         add di, 2
-        macPushZero
 
         macReturnTwoArg
 
@@ -372,7 +349,6 @@ section .text
         .done:
         mov word [di], ax
         add di, 2
-        macPushZero
         pop ax
         ret
 
@@ -384,7 +360,6 @@ section .text
 
         mov di, dx
         call procWriteB
-        macPushZero
         pop ax
         call procIOSwap
         macReturnTwoArg
@@ -396,7 +371,6 @@ section .text
         mov ax, word [_DX]
         mov word [di], ax
         add di, 2
-        macPushZero
         pop ax
         call procIOSwap
         macReturnTwoArg
@@ -405,7 +379,6 @@ section .text
         or al, 0x8
         mov di, cx
         call procDecodeRegister
-        macPushZero
         macReturnOneArg
 
     procHandleIncRM:
@@ -475,7 +448,6 @@ section .text
         .return:
         mov di, cx
         call procPushArr
-        macPushZero
         macReturnOneArg
 
     procHandleIntersegment:
@@ -488,28 +460,24 @@ section .text
         call procPushC
         pop ax
         call procWriteW
-        macPushZero
         macReturnOneArg
 
     procHandleRetAdd:
         mov di, cx
         call procReadDataW
         call procWriteW
-        macPushZero
         macReturnOneArg
 
     procHandleInt:
         mov di, cx
         call procReadDataB
         call procWriteB
-        macPushZero
         macReturnOneArg
 
     procHandleInt3:
         mov di, cx
         mov dl, '3'
         call procPushC
-        macPushZero
         macReturnOneArg
     
     procHandleImmAcc:
@@ -526,12 +494,10 @@ section .text
             call procReadDataB
             call procWriteB
         .postif:
-        macPushZero
         mov di, cx
         call procPushC
         mov dl, dh
         call procPushC
-        macPushZero
         pop dx
         macReturnTwoArg
 
@@ -554,7 +520,6 @@ section .text
 
         mov di, cx
         call procDecodeModRMPtr
-        macPushZero
         mov di, dx
         call procGetData
         macReturnTwoArg
@@ -583,7 +548,6 @@ section .text
         shl ah, 3
         or al, ah
         call procDecodeRegister
-        macPushZero
 
         pop ax
         and ah, 0x02
@@ -709,7 +673,6 @@ section .text
         call procPushC
         pop dx
         .post_brackets:
-        macPushZero
         mov ax, [bp]
         add sp, 2
         pop bp
@@ -753,7 +716,6 @@ section .text
             jmp .post_data
         
         .post_data:
-        macPushZero
         pop ax
         ret
 
@@ -768,9 +730,9 @@ section .text
         mov ax, word [bx]
         mov word [di], ax
         add di, 2
-        macPushZero
         pop bx
         pop ax
+        ret
 
     procDecodeRegister:
         push ax
@@ -786,7 +748,6 @@ section .text
         mov word[di], cx
 
         add di, 2
-        macPushZero
 
         pop cx
         pop bx

@@ -250,24 +250,24 @@ LDS;11000101;procHandleRegMemSwap
 
 XLATB;11010111;procHandleSingleByte
 
-INC;11111110;procHandleIncRM
-INC;01000000;procHandleIncReg
-INC;01000001;procHandleIncReg
-INC;01000010;procHandleIncReg
-INC;01000011;procHandleIncReg
-INC;01000100;procHandleIncReg
-INC;01000101;procHandleIncReg
-INC;01000110;procHandleIncReg
-INC;01000111;procHandleIncReg
+;11111110;procHandleIncRM
+INC;01000000;procHandleRegInstr
+INC;01000001;procHandleRegInstr
+INC;01000010;procHandleRegInstr
+INC;01000011;procHandleRegInstr
+INC;01000100;procHandleRegInstr
+INC;01000101;procHandleRegInstr
+INC;01000110;procHandleRegInstr
+INC;01000111;procHandleRegInstr
 
-DEC;01001000;procHandleIncReg
-DEC;01001001;procHandleIncReg
-DEC;01001010;procHandleIncReg
-DEC;01001011;procHandleIncReg
-DEC;01001100;procHandleIncReg
-DEC;01001101;procHandleIncReg
-DEC;01001110;procHandleIncReg
-DEC;01001111;procHandleIncReg
+DEC;01001000;procHandleRegInstr
+DEC;01001001;procHandleRegInstr
+DEC;01001010;procHandleRegInstr
+DEC;01001011;procHandleRegInstr
+DEC;01001100;procHandleRegInstr
+DEC;01001101;procHandleRegInstr
+DEC;01001110;procHandleRegInstr
+DEC;01001111;procHandleRegInstr
 
 AAD;11010101;procHandleInt
 AAM;11010100;procHandleInt

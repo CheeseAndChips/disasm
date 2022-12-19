@@ -64,6 +64,15 @@ section .data
     _REP_TABLE_LEN equ $-_REP_ALLOWED_INSTR
 
 section .text
+; -------------------------
+;   instruction decoding
+; -------------------------
+
+    ; single byte, no operands
+    procHandleSingleByte:
+        macReturnNoArg
+
+    ; move immediate to register/memory
     procHandleMovImmRM:
         macReadSecondByte
 
@@ -72,35 +81,34 @@ section .text
 
         mov di, dx
         test ah, 1
-        jnz .dataW
-            call procReadDataB
-            call procWriteB
-            jmp .done
-        .dataW:
-            call procReadDataW
-            call procWriteW
-
+        call procWriteDataByFlag
         .done:
         macReturnTwoArg
 
+    ; move immediate to register
     procHandleMovImmReg:
         mov di, cx
         call procDecodeRegister
 
         mov di, dx
         test al, 0x08
+        call procWriteDataByFlag
+        .done:
+        macReturnTwoArg
+
+    ; reads from file and writes to output byte or word
+    ; according to zero flag
+    procWriteDataByFlag:
         jnz .dataW
             call procReadDataB
             call procWriteB
-            jmp .done
+            ret
         .dataW:
             call procReadDataW
             call procWriteW
+            ret
 
-        .done:
-        
-        macReturnTwoArg
-
+    ; move memory to/from accumulator
     procHandleMovMemAX:
         test al, 0x01
         mov di, cx
@@ -135,6 +143,7 @@ section .text
 
         macReturnTwoArg
 
+    ; move to/from segment register
     procHandleMovSegReg:
         macReadSecondByte
 
@@ -154,6 +163,7 @@ section .text
         .skip_swap:
         macReturnTwoArg
 
+    ; shl/shr/sar/rol/ror/rcl/rcr
     procHandleLogic:
         macReadSecondByte
 
@@ -166,7 +176,6 @@ section .text
             push ax
             mov ax, [_CL]
             mov word [di], ax
-            add di, 2
             pop ax
             jmp .done
         .write1:
@@ -193,6 +202,7 @@ section .text
         pop ax
         macReturnTwoArg
 
+    ; test register/memory with register
     procHandleTestRMReg:
         macReadSecondByte
         
@@ -209,6 +219,7 @@ section .text
 
         macReturnTwoArg
 
+    ; test register/memory with immediate
     procHandleTestImmRM:
         mov di, cx
         call procDecodeModRMPtr
@@ -216,17 +227,10 @@ section .text
         mov di, dx
 
         test ah, 1
-        jz .dataB
-            call procReadDataW
-            call procWriteW
-            jmp .done
-        .dataB:
-            call procReadDataB
-            call procWriteB
-        .done:
-
+        call procWriteDataByFlag
         macReturnTwoArg
 
+    ; jump with 1 byte displacement
     procHandleDispJump:
         macReadSecondByte
         cbw
@@ -238,19 +242,29 @@ section .text
         call procWriteW
 
         macReturnOneArg
-        
+    
+    ; push/pop segment register
     procHandleSegReg:
         shr al, 3
         mov di, cx
         call procDecodeSegRegister
         macReturnOneArg
     
+    ; register/memory as argument
     procHandleModRMTwoByte:
         mov di, cx
         call procDecodeModRMPtr
-
         macReturnOneArg
 
+    ; register/memory with FAR prefix as argument
+    procHandleModRMTwoByteFar:
+        mov di, cx
+        mov si, _FAR
+        call procPushArr
+        call procDecodeModRM
+        macReturnOneArg
+
+    ; pop register/memory
     procHandlePopRM:
         macReadSecondByte
         test al, 111b << 3
@@ -261,12 +275,26 @@ section .text
         call procHandleModRMTwoByte
         macReturnOneArg
 
+    ; push/pop/inc/dec, register as argument
     procHandleRegInstr:
         or al, 0x08
         mov di, cx
         call procDecodeRegister
         macReturnOneArg
 
+    ; xchg register to accumulator
+    procHandleRegAcc:
+        mov di, dx
+        or al, 0x08
+        call procDecodeRegister
+
+        mov di, cx
+        mov ax, word [_AX]
+        mov word [di], ax
+
+        macReturnTwoArg
+
+    ; handle mul/imul/div/idiv/neg/not
     procHandleMulDivNegNot:
         macReadSecondByte
         push ax
@@ -296,6 +324,7 @@ section .text
         call procHandleModRMTwoByte
         macReturnTwoArg
 
+    ; direct jump/call
     procHandleDirect:
         mov di, cx
         call procReadDataW
@@ -306,37 +335,7 @@ section .text
         call procWriteW
         macReturnOneArg
 
-    procHandleIndirect:
-        mov di, cx
-        call procDecodeModRMPtr
-        macReturnOneArg
-
-    procHandleIndirectIntersegment:
-        mov di, cx
-        mov si, _FAR
-        call procPushArr
-        call procDecodeModRM
-        macReturnOneArg
-
-    procHandleRegAcc:
-        mov di, dx
-        or al, 0x08
-        call procDecodeRegister
-
-        mov di, cx
-        mov ax, word [_AX]
-        mov word [di], ax
-        add di, 2
-
-        macReturnTwoArg
-
-    procIOSwap:
-        test al, 2
-        jz .skip_swap
-        xchg cx, dx
-        .skip_swap:
-        ret
-
+    ; in/out instructions
     procHandleIOReg:
         push ax
         mov di, cx
@@ -352,6 +351,7 @@ section .text
         pop ax
         ret
 
+    ; in/out, fixed port
     procHandleIOFixed:
         push ax
         call procHandleIOReg
@@ -364,6 +364,7 @@ section .text
         call procIOSwap
         macReturnTwoArg
 
+    ; in/out, variable port
     procHandleIOVariable:
         push ax
         call procHandleIOReg
@@ -375,12 +376,7 @@ section .text
         call procIOSwap
         macReturnTwoArg
 
-    procHandleIncReg:
-        or al, 0x8
-        mov di, cx
-        call procDecodeRegister
-        macReturnOneArg
-
+    ; inc/dec with register/memory
     procHandleIncRM:
         macReadSecondByte
 
@@ -398,16 +394,17 @@ section .text
         call procHandleModRMTwoByte
         macReturnOneArg
 
+    ; byte FF - jmp/call/push/inc/dec
     procHandleFF:
         macReadSecondByte
 
         push ax
             and al, 00111000b
         
-            macModEntryCall 100b, _JMP, procHandleIndirect
-            macModEntryCall 101b, _JMP, procHandleIndirectIntersegment
-            macModEntryCall 010b, _CALL, procHandleIndirect
-            macModEntryCall 011b, _CALL, procHandleIndirectIntersegment
+            macModEntryCall 100b, _JMP, procHandleModRMTwoByte
+            macModEntryCall 101b, _JMP, procHandleModRMTwoByteFar
+            macModEntryCall 010b, _CALL, procHandleModRMTwoByte
+            macModEntryCall 011b, _CALL, procHandleModRMTwoByteFar
             macModEntryCall 110b, _PUSH, procHandleModRMTwoByte
             macModEntryCall 000b, _INC, procHandleModRMTwoByte
             macModEntryCall 001b, _DEC, procHandleModRMTwoByte
@@ -420,6 +417,7 @@ section .text
         call di
         ret
 
+    ; repe/repne
     procHandleRep:
         macReadSecondByte
 
@@ -450,6 +448,7 @@ section .text
         call procPushArr
         macReturnOneArg
 
+    ; intersegment call/jmp
     procHandleIntersegment:
         mov di, cx
         call procReadDataW
@@ -462,24 +461,31 @@ section .text
         call procWriteW
         macReturnOneArg
 
+    ; ret with adding to sp
     procHandleRetAdd:
         mov di, cx
         call procReadDataW
+        jnc .no_error
+        ret
+        .no_error:
         call procWriteW
         macReturnOneArg
 
+    ; int x
     procHandleInt:
         mov di, cx
         call procReadDataB
         call procWriteB
         macReturnOneArg
 
+    ; int 3
     procHandleInt3:
         mov di, cx
         mov dl, '3'
         call procPushC
         macReturnOneArg
     
+    ; add/adc/sub/sbb/cmp/and/or/xor/test with accumulator
     procHandleImmAcc:
         mov di, dx
         push dx
@@ -501,6 +507,7 @@ section .text
         pop dx
         macReturnTwoArg
 
+    ; immediate with register/memory
     procHandleImmRegMem:
         macReadSecondByte
         
@@ -556,8 +563,16 @@ section .text
         .finished:
         macReturnTwoArg
 
-    procHandleSingleByte:
-        macReturnNoArg
+; -------------------------
+;    helpers for decoding
+; -------------------------
+
+    procIOSwap:
+        test al, 2
+        jz .skip_swap
+        xchg cx, dx
+        .skip_swap:
+        ret
 
     procDecodeModRMPtr:
         push ax
